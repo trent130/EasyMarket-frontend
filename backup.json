@@ -1,0 +1,102 @@
+EasyMarket@0.1.0 /home/trent22/Documents/EasyMarket/frontend
+├── @emotion/react@11.13.5
+├── @emotion/styled@11.13.5
+├── @eslint/config-array@0.19.1
+├── @eslint/object-schema@2.1.5
+├── @hookform/resolvers@3.9.1
+├── @mui/icons-material@6.1.10
+├── @mui/material@6.1.10
+├── @next-auth/prisma-adapter@1.0.7
+├── @prisma/client@6.0.1
+├── @radix-ui/react-accordion@1.2.1
+├── @radix-ui/react-alert-dialog@1.1.2
+├── @radix-ui/react-aspect-ratio@1.1.0
+├── @radix-ui/react-avatar@1.1.1
+├── @radix-ui/react-checkbox@1.1.2
+├── @radix-ui/react-collapsible@1.1.1
+├── @radix-ui/react-context-menu@2.2.2
+├── @radix-ui/react-dialog@1.1.2
+├── @radix-ui/react-dropdown-menu@2.1.2
+├── @radix-ui/react-hover-card@1.1.2
+├── @radix-ui/react-icons@1.3.2
+├── @radix-ui/react-label@2.1.0
+├── @radix-ui/react-menubar@1.1.2
+├── @radix-ui/react-navigation-menu@1.2.1
+├── @radix-ui/react-popover@1.1.2
+├── @radix-ui/react-progress@1.1.0
+├── @radix-ui/react-radio-group@1.2.1
+├── @radix-ui/react-scroll-area@1.2.1
+├── @radix-ui/react-select@2.1.2
+├── @radix-ui/react-separator@1.1.0
+├── @radix-ui/react-slider@1.2.1
+├── @radix-ui/react-slot@1.1.0
+├── @radix-ui/react-switch@1.1.1
+├── @radix-ui/react-tabs@1.1.1
+├── @radix-ui/react-toast@1.2.2
+├── @radix-ui/react-toggle-group@1.1.0
+├── @radix-ui/react-toggle@1.1.0
+├── @radix-ui/react-tooltip@1.1.4
+├── @simplewebauthn/browser@12.0.0 invalid: "^13.0.0" from the root project
+├── UNMET DEPENDENCY @simplewebauthn/server@^13.1.0
+├── @simplewebauthn/types@12.0.0
+├── @simplewebauthn/typescript-types@8.3.4
+├── @types/axios@0.14.4
+├── @types/bcrypt@5.0.2
+├── @types/lodash@4.17.13
+├── @types/node@22.10.1
+├── @types/qrcode@1.5.5
+├── @types/react-dom@19.0.1
+├── @types/react-google-recaptcha@2.1.9
+├── @types/react@19.0.1
+├── @types/uuid@10.0.0
+├── @types/zxcvbn@4.4.5
+├── autoprefixer@10.4.20 extraneous
+├── axios@1.7.9
+├── bcrypt@5.1.1
+├── browserslist@4.24.2 extraneous
+├── class-variance-authority@0.7.1
+├── clsx@2.1.1
+├── cmdk@1.0.4
+├── date-fns@3.6.0 invalid: "^4.0.0" from the root project
+├── electron-to-chromium@1.5.73 extraneous
+├── embla-carousel-react@8.5.1
+├── eslint-config-next@15.0.4 invalid: "15.1.6" from the root project
+├── eslint@9.16.0
+├── firebase@11.0.2
+├── UNMET DEPENDENCY formik@^2.4.6
+├── fraction.js@4.3.7 extraneous
+├── glob@11.0.0
+├── idna-uts46@1.1.0
+├── lodash@4.17.21
+├── lucide-react@0.468.0 invalid: "^0.474.0" from the root project
+├── next-auth@4.24.11
+├── next-themes@0.4.4
+├── next@15.0.4 invalid: "^15.1.4" from the root project
+├── node-releases@2.0.19 extraneous
+├── nodemailer@6.9.16
+├── normalize-range@0.1.2 extraneous
+├── npmlog@7.0.1
+├── otplib@12.0.1
+├── postcss@8.4.49
+├── qrcode@1.5.4
+├── react-day-picker@9.4.1
+├── react-dom@18.2.0 invalid: "^19.0.0" from the root project
+├── react-google-recaptcha@3.1.0
+├── react-hook-form@7.54.0
+├── react-resizable-panels@2.1.7
+├── react@18.2.0 invalid: "^19.0.0" from the root project
+├── recharts@2.14.1
+├── rimraf@6.0.1
+├── sonner@1.7.0
+├── styled-components@6.1.13
+├── tailwind-merge@2.5.5
+├── tailwindcss-animate@1.0.7
+├── tailwindcss@3.4.16 invalid: "^4.0.0" from the root project
+├── tr46@5.0.0
+├── typescript@5.7.2
+├── update-browserslist-db@1.1.1 extraneous
+├── vaul@1.1.1
+├── UNMET DEPENDENCY yup@^1.6.1
+├── zod@3.23.8
+└── zxcvbn@4.4.2
+
