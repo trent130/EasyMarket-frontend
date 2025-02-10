@@ -18,11 +18,13 @@ export default function WishlistPage() {
 
   return (
     <Layout>
-      <Typography variant="h4" component="h1" gutterBottom>
+      <Typography variant="h4" component="h1" className='mt-20' gutterBottom>
         Wishlist
       </Typography>
       {wishlist.length === 0 ? (
-        <Typography>Your wishlist is empty.</Typography>
+        <div className='mt-4'>
+          <Typography>Your wishlist is empty.</Typography>
+        </div>
       ) : (
         <List>
           {wishlist.map((item) => (
