@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ReCAPTCHA from "react-google-recaptcha";
 import { checkPasswordStrength, PasswordStrengthResult } from '../../utils/passwordStrength';
+import { apiService } from "@/services/api/api"; // Import the apiService
 
 /**
  * Handles the sign up form submission.
@@ -47,12 +48,12 @@ export default function SignUp() {
  * Handles the form submission for the signup process.
  *
  * Prevents default form submission behavior, clears any existing error or success messages,
- * and performs input validation. Validates that all fields are filled, passwords match, 
- * password strength is sufficient, and CAPTCHA is completed. If validation passes, sends 
+ * and performs input validation. Validates that all fields are filled, passwords match,
+ * password strength is sufficient, and CAPTCHA is completed. If validation passes, sends
  * a signup request to the server with the user's name, email, password, and CAPTCHA token.
  *
- * Displays an appropriate success message and redirects to the signin page on successful 
- * signup, or shows an error message if the signup fails. Resets the CAPTCHA regardless of 
+ * Displays an appropriate success message and redirects to the signin page on successful
+ * signup, or shows an error message if the signup fails. Resets the CAPTCHA regardless of
  * the outcome.
  *
  * @param e - The form event triggered by the submission.
@@ -85,22 +86,14 @@ export default function SignUp() {
     //}
 
     try {
-      const response = await fetch('/marketplace/signup/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, }), // captchaToken
-      });
+      // Use the apiService.signUp
+      const response = await apiService.signUp(username, email, password);
 
-      const data = await response.json();
+      setSuccess(response.message);
+      setTimeout(() => router.push('/auth/signin'), 3000);
 
-      if (response.ok) {
-        setSuccess(data.message);
-        setTimeout(() => router.push('/auth/signin'), 3000);
-      } else {
-        setError(data.error || 'An error occurred during signup');
-      }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
+    } catch (error:any) {
+      setError(error.message || 'An error occurred during signup');
     } finally {
       recaptchaRef.current?.reset();
     }
@@ -125,7 +118,7 @@ export default function SignUp() {
               onChange={(e) => setUsername(e.target.value)}
             />
           </div>
-          
+
           {/* Email Input */}
           <div>
             <label htmlFor="email" className="sr-only">Email</label>

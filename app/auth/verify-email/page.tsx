@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import useSearchParams from 'next/navigation';
- { useSearchParams }
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 export default function VerifyEmail() {
   const [status, setStatus] = useState('Verifying...');
   const router = useRouter();
-  const searchParams = useSearchParams;
+  const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
   useEffect(() => {
@@ -20,21 +19,23 @@ export default function VerifyEmail() {
 
     const verifyEmail = async () => {
       try {
-        const response = await fetch(`/marketplace/verify-email?token=${token}`);
-        const data = await response.json();
+        //const response = await fetch(`/marketplace/verify-email?token=${token}`);
+        //const data = await response.json();
+        //setStatus("Not implimented")
 
-        if (response.ok) {
-          setStatus(data.message);
-        } else {
-          setStatus(data.error || 'An error occurred during verification');
-        }
+        //if (response.ok) {
+        //  setStatus(data.message);
+        //} else {
+        //  setStatus(data.error || 'An error occurred during verification');
+        //}
+        setStatus("this feature is still not implimented please login in the app to continue")
       } catch (error) {
         setStatus('An error occurred. Please try again.');
       }
     };
 
     verifyEmail();
-  }, [token]);
+  }, [token, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">

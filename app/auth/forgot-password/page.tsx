@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiService } from '@/services/api/api';// Import the apiService
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -20,21 +21,11 @@ export default function ForgotPassword() {
     }
 
     try {
-      const response = await fetch('/marketplace/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage(data.message);
-      } else {
-        setError(data.error || 'An error occurred');
-      }
-    } catch (error) {
-      setError('An error occurred. Please try again.');
+      // Use the apiService to trigger forgotPassword
+      const response = await apiService.forgotPassword(email);
+      setMessage(response.message);
+    } catch (error:any) {
+      setError(error.message || 'An error occurred');
     }
   };
 

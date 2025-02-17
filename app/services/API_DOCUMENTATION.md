@@ -3,103 +3,117 @@
 ## API Modules
 
 ### 1. Products API
+
 ```typescript
-import { productsApi } from '@/lib/api';
+import { productService } from '@/services/api/product';
 
 // Get all products
-const products = await productsApi.getAll();
+productService.getProducts();
 
 // Search products
-const results = await productsApi.search({
+productService.searchProducts({
   query: 'textbook',
-  category: 1,
+  category: 'someCategory',
   min_price: 100,
   max_price: 1000,
   sort_by: 'price_asc'
 });
 
 // Create product
-const newProduct = await productsApi.create({
+productService.createProduct({
   title: 'Product Title',
   description: 'Description',
   price: 100,
-  category: 1,
+  category: 'someCategory',
   image: file
 });
 ```
 
 ### 2. Orders API
 ```typescript
-import { orderApi } from '@/lib/api';
+import { ordersApi } from '@/services/api/orders';
 
 // Create order
-const order = await orderApi.create({
+ordersApi.create({
   items: [{ product_id: 1, quantity: 2 }],
   shipping_address: 'Address'
 });
 
 // Get order history
-const orders = await orderApi.getHistory();
+ordersApi.getHistory();
 
 // Track order
-const status = await orderApi.trackOrder(orderId);
+ordersApi.trackOrder(orderId);
 ```
 
 ### 3. Payment API
 ```typescript
-import { paymentApi } from '@/lib/api';
+import { paymentApi } from '@/services/api/payment';
 
 // Initiate M-Pesa payment
-const payment = await paymentApi.mpesa.initiate({
+paymentApi.initiateMpesaPayment({
   phone_number: '254712345678',
   order_id: 123,
   amount: 1000
 });
 
 // Verify payment
-const status = await paymentApi.verifyPayment(transactionId);
+paymentApi.verifyPayment({ transaction_id: transactionId });
 
 // Get payment receipt
-const receipt = await paymentApi.generateReceipt(transactionId);
+paymentApi.getPaymentReceipt(transactionId);
 ```
 
-### 4. Static Pages API
+### 4. StaticPages API
 ```typescript
-import { staticPagesApi } from '@/lib/api';
+import { staticpagesApi } from '@/services/api/staticpages';
 
 // Get page content
-const page = await staticPagesApi.getPage('about-us');
+staticpagesApi.getPage('about-us');
 
 // Get FAQs
-const faqs = await staticPagesApi.getFAQsByCategory();
+staticpagesApi.getFAQsByCategory();
 
 // Send contact message
-const response = await staticPagesApi.sendContactMessage({
+staticpagesApi.sendContactMessage({
   name: 'John Doe',
   email: 'john@example.com',
   subject: 'Query',
   message: 'Message content'
 });
 ```
-
 ### 5. Marketplace API
 ```typescript
-import { marketplaceApi } from '@/lib/api';
+import { marketplaceApi } from '@/services/api/marketplace';
 
 // Get cart
-const cart = await marketplaceApi.getCart();
+marketplaceApi.getCart();
 
 // Add to wishlist
-await marketplaceApi.addToWishlist(productId);
+marketplaceApi.addToWishlist(productId);
 
 // Get product reviews
-const reviews = await marketplaceApi.getProductReviews(productId);
+marketplaceApi.getProductReviews(productId);
 ```
 
-## Authentication
+### 6. Authentication
+To login
+```typescript
+import { apiService } from '@/services/api/api';
+
+//Login
+apiService.login({username: 'someUsername',password: 'Password'});
+```
+To refresh
+```typescript
+import { apiService } from '@/services/api/api';
+
+//RefreshToken
+apiService.refreshToken('SomeRefreshToken');
+```
 
 All authenticated requests should include a JWT token:
-```typescript
+```typescript 
 // api-client.ts
 apiClient.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
@@ -109,27 +123,16 @@ apiClient.interceptors.request.use(config => {
   return config;
 });
 ```
-
-## Error Handling
-
+### Error Handling
 API errors are handled consistently:
 ```typescript
 try {
-  const result = await api.products.create(data);
-} catch (error) {
-  if (error.response?.status === 401) {
-    // Handle unauthorized
-  } else if (error.response?.status === 400) {
-    // Handle validation errors
-    const errors = error.response.data;
-  } else {
-    // Handle other errors
-  }
+  const result = await productService.getProducts();
+} catch (error:any) {
+  console.error(error.message);
 }
 ```
-
-## Real-time Updates
-
+### Real-time Updates
 WebSocket integration for real-time updates:
 ```typescript
 import { WebSocketService } from '@/lib/websocket';
@@ -146,8 +149,7 @@ ws.subscribe(WebSocketMessageType.ORDER_UPDATE, (data) => {
 });
 ```
 
-## Type Safety
-
+### Type Safety
 All API responses are properly typed:
 ```typescript
 interface Product {
@@ -157,19 +159,19 @@ interface Product {
   // ...other fields
 }
 
-const products: Product[] = await api.products.getAll();
+//the responses are in the data variable
+productService.getProducts().then(res => const products: Product[] = res);
 ```
 
-## Best Practices
-
+### Best Practices
 1. Use the unified API interface:
 ```typescript
-import { api } from '@/lib/api';
+import { productService, ordersApi, paymentApi } from '@/lib/api';
 
 // Instead of importing individual APIs
-api.products.getAll();
-api.orders.create();
-api.payment.verifyPayment();
+productService.getProducts();
+ordersApi.create({});
+paymentApi.verifyPaymentStatus('');
 ```
 
 2. Handle loading states:
@@ -178,17 +180,16 @@ const [loading, setLoading] = useState(false);
 
 try {
   setLoading(true);
-  await api.products.create(data);
+  await productService.create({});
 } finally {
   setLoading(false);
 }
 ```
-
 3. Cache responses when appropriate:
 ```typescript
 const { data: products, mutate } = useSWR(
   '/api/products',
-  () => api.products.getAll()
+  () => productService.getProducts()
 );
 ```
 
@@ -198,11 +199,12 @@ const { data: products, mutate } = useSWR(
   <ProductList />
 </ErrorBoundary>
 ```
-
-## Integration Examples
-
+### Integration Examples
 ### Product Listing Page
 ```typescript
+import { productService } from '@/services/api/product';
+import { useState, useEffect } from 'react';
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -210,10 +212,10 @@ export default function ProductsPage() {
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const data = await api.products.getAll();
+        const data = await productService.getProducts().then(res => res.products);
         setProducts(data);
-      } catch (error) {
-        console.error('Failed to load products:', error);
+      } catch (error:any) {
+        console.error('Failed to load products:', error.message);
       } finally {
         setLoading(false);
       }
@@ -233,13 +235,16 @@ export default function ProductsPage() {
   );
 }
 ```
-
 ### Checkout Flow
 ```typescript
+import { ordersApi } from '@/services/api/orders';
+import { paymentApi } from '@/services/api/payment';
+import { marketplaceApi } from '@/services/api/marketplace';
+
 async function handleCheckout(cart: CartItem[]) {
   try {
     // 1. Create order
-    const order = await api.orders.create({
+    const order = await ordersApi.create({
       items: cart.map(item => ({
         product_id: item.product.id,
         quantity: item.quantity
@@ -247,24 +252,28 @@ async function handleCheckout(cart: CartItem[]) {
     });
 
     // 2. Initialize payment
-    const payment = await api.payment.mpesa.initiate({
+    const payment = await paymentApi.initiateMpesaPayment({
       order_id: order.id,
-      amount: order.total_amount
+      amount: order.total_amount,
+      phone_number: "254700000000"
     });
 
     // 3. Verify payment
-    const status = await api.payment.verifyPayment(
-      payment.transaction_id
-    );
+    const status = await paymentApi.verifyPayment({
+      transaction_id: payment.transaction_id
+    });
 
-    if (status.verified) {
+    if (status.status ==="completed") {
       // 4. Clear cart
-      await api.marketplace.clearCart();
-      
+      await marketplaceApi.clearCart();
+
       // 5. Show success
-      router.push(`/orders/${order.id}/success`);
+      // router.push(`/orders/${order.id}/success`);
+      return "success"
     }
-  } catch (error) {
-    console.error('Checkout failed:', error);
+  } catch (error:any) {
+    console.error('Checkout failed:', error.message);
+    return "failed";
   }
 }
+```

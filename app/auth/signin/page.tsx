@@ -10,15 +10,14 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import Link from "next/link";
-// import { Eye, EyeOff } from "lucide-react";
 import useVisibility from "@/components/useVisibility";
 import Component from "@/components/showAndHidePassword";
+import { apiService } from "@/services/api/api"; // Import the apiService
 
 const loginSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"), ////.email('Invalid username address'),
+  username: z.string().min(3, "Username must be at least 3 characters"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
-
 
 type LoginForm = z.infer<typeof loginSchema>;
 
@@ -37,19 +36,23 @@ export default function SignInPage() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
-      const result = await signIn("credentials", {
+      // Attempt sign-in using apiService
+      const result = await apiService.login({
         username: data.username,
         password: data.password,
-        redirect: false,
       });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
+      if (result) {
+        // Store the auth token (if needed)
+        localStorage.setItem("token", result.token);
+
+        // Redirect to the home page or desired location
         router.push("/");
+      } else {
+        setError("Invalid credentials");
       }
-    } catch (error) {
-      setError("An error occurred during sign in");
+    } catch (error: any) {
+      setError(error.message || "An error occurred during sign in");
     }
   };
 
@@ -124,7 +127,7 @@ export default function SignInPage() {
       </div>
 
       <div className="text-center text-sm text-indigo-600 hover:text-indigo-500">
-        Don&apos;t have an account?{" "}
+        Don't have an account?{" "}
         <Link href="/auth/signup" className="hover:underline">
           Sign up
         </Link>

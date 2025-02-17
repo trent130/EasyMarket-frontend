@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+import { fetchSessions, terminateSession } from './actions';
 
 interface Session {
   id: string;
@@ -21,39 +22,35 @@ export default function ManageSessions() {
     if (status === 'unauthenticated') {
       router.push('/auth/signin');
     } else if (status === 'authenticated') {
-      fetchSessions();
+      loadSessions();
     }
   }, [status, router]);
 
-  const fetchSessions = async () => {
+  const loadSessions = async () => {
     try {
-      const response = await fetch('/marketplace/sessions');
-      if (response.ok) {
-        const data = await response.json();
-        setSessions(data);
+      const result = await fetchSessions();
+      if ("error" in result) {
+        setError(result.error);
       } else {
-        setError('Failed to fetch sessions');
+        setSessions(result);
       }
-    } catch (error) {
-      setError('An error occurred while fetching sessions');
+    } catch (error: any) {
+      setError(error.message || 'Failed to load sessions.');
     }
   };
 
-  const terminateSession = async (sessionId: string) => {
+  const handleTerminateSession = async (sessionId: string) => {
     try {
-      const response = await fetch('/marketplace/sessions', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
-      });
-
-      if (response.ok) {
-        setSessions(sessions.filter(s => s.id !== sessionId));
+      const result = await terminateSession(sessionId);
+      if ("message" in result) {
+        // Optimistically update the UI
+        setSessions(prevSessions => prevSessions.filter(s => s.id !== sessionId));
+        setError("")
       } else {
-        setError('Failed to terminate session');
+        setError(result.error);
       }
-    } catch (error) {
-      setError('An error occurred while terminating the session');
+    } catch (error: any) {
+      setError(error.message || 'Failed to terminate session.');
     }
   };
 
@@ -74,7 +71,7 @@ export default function ManageSessions() {
               <p><strong>Last Active:</strong> {new Date(s.lastActive).toLocaleString()}</p>
             </div>
             <button
-              onClick={() => terminateSession(s.id)}
+              onClick={() => handleTerminateSession(s.id)}
               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
             >
               Terminate

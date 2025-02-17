@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { authApi } from '@/services/api/auth'; // Import the authApi
 
 export default function Manage2FA() {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -17,48 +18,36 @@ export default function Manage2FA() {
     } else if (status === 'authenticated') {
       // In a real app, you'd fetch the user's 2FA status from the server
       // For this example, we'll just use a mock value
-      setIs2FAEnabled(true);
+      const fetch2FAStatus = async () => {
+        try {
+          const response = await authApi.getStatus();
+          setIs2FAEnabled(response.isEnabled);
+        } catch (error: any) {
+          setMessage(error.message || 'An error occurred while fetching 2FA status.');
+        }
+      };
+      fetch2FAStatus();
     }
   }, [status, router]);
 
   const handleDisable2FA = async () => {
     try {
-      const response = await fetch('/api/auth/disable-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await authApi.disable();
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.success) {
         setIs2FAEnabled(false);
-        setMessage(data.message);
+        setMessage(response.message || '2FA disabled successfully.');
       } else {
-        setMessage(data.error || 'An error occurred');
+        setMessage(response.message || 'Failed to disable 2FA.');
       }
-    } catch (error) {
-      setMessage('An error occurred');
+    } catch (error: any) {
+      setMessage(error.message || 'An error occurred');
     }
   };
 
   const handleGenerateBackupCodes = async () => {
-    try {
-      const response = await fetch('/api/auth/generate-backup-codes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setBackupCodes(data.backupCodes);
-        setMessage('Backup codes generated successfully');
-      } else {
-        setMessage(data.error || 'An error occurred');
-      }
-    } catch (error) {
-      setMessage('An error occurred');
-    }
+    //Not implemented this functionallity
+    setMessage('Not implimented funcitonallity');
   };
 
   if (status === 'loading') {
