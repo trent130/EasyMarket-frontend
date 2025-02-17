@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { profileApi } from '@/services/api/profileApi'; // Corrected import path
 import { User } from '@/types/common'; // Corrected import path
-import  Profile  from '../../components/Profile/Profile';
+import  Profile  from '@/components/Profile/Profile';
 import React from 'react';
 import { useToast } from "@/hooks/use-toast"
 

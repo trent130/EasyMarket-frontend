@@ -157,3 +157,12 @@ export interface MessageReaction {
     emoji: string;
     createdAt: string;
 }
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: Date;
+  type: 'product_launch' | 'sale' | 'promotion';
+  productId?: string;
+}

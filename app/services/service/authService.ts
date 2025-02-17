@@ -12,7 +12,7 @@ export interface TwoFactorStatusResponse {
 
 export interface SignInResponse {
   message: string;
-  token: string; // Assuming a token is returned on successful sign-in
+  token: string;
 }
 
 export interface SignUpResponse {
@@ -118,7 +118,7 @@ class AuthService {
  * @returns A Promise that resolves to a SignInResponse containing a message and token if successful.
  */
   async signIn(username: string, password: string): Promise<SignInResponse> {
-    const response = await apiClient.post<SignInResponse>('/signin/', {
+    const response = await apiClient.post<SignInResponse>('/marketplace/signin/', {
         username,
         password,
     });
@@ -135,7 +135,7 @@ class AuthService {
  * @returns A Promise that resolves to a SignUpResponse containing a message.
  */
   async signUp(username: string, email: string, password: string): Promise<SignUpResponse> {
-    const response = await apiClient.post<SignUpResponse>('/signup/', {
+    const response = await apiClient.post<SignUpResponse>('/marketplace/signup/', {
         username,
         email,
         password,
@@ -150,7 +150,7 @@ class AuthService {
    * @returns A Promise that resolves to a ForgotPasswordResponse containing a message.
    */
   async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-    const response = await apiClient.post<ForgotPasswordResponse>('/forgot-password/', {
+    const response = await apiClient.post<ForgotPasswordResponse>('/marketplace/forgot-password/', {
         email,
     });
     return response.data;

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { authApi } from '@/services/api/auth'; 
 
 export default function Enable2FA() {
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -12,45 +13,31 @@ export default function Enable2FA() {
 
   const handleEnable2FA = async () => {
     try {
-      // In a real application, you would get the user ID from the session
-      const userId = '1'; // Hardcoded for this example
-      const response = await fetch('/marketplace/enable-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setQrCode(data.qrCodeUrl);
-        setSecret(data.secret);
-      } else {
-        setError(data.error || 'An error occurred');
-      }
-    } catch (error) {
-      setError('An error occurred');
+      // Use the authApi to enable 2FA
+      const response = await authApi.enable();
+      setQrCode(response.qrCodeUrl);
+      setSecret(response.secret);
+    } catch (error: any) {
+      setError(error.message || 'An error occurred');
     }
   };
 
   const handleVerify = async () => {
     try {
-      // In a real application, you would send this to your backend for verification
-      const response = await fetch('/marketplace/verify-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: '1', token: verificationCode, secret }),
-      });
+      // Use the authApi to verify the 2FA token
+      if (!secret) {
+        setError('Secret key is missing.');
+        return;
+      }
+      const response = await authApi.verify(verificationCode, secret);
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.success) {
         setSuccess('Two-factor authentication enabled successfully');
       } else {
-        setError(data.error || 'Verification failed');
+        setError(response.message || 'Verification failed');
       }
-    } catch (error) {
-      setError('An error occurred');
+    } catch (error:any) {
+      setError(error.message || 'An error occurred');
     }
   };
 
