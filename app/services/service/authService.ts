@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/marketplace';
+import apiClient from '../api-client';
 
 export interface TwoFactorAuthResponse {
   secret: string;
@@ -11,7 +9,6 @@ export interface TwoFactorStatusResponse {
   isEnabled: boolean;
   isVerified: boolean;
 }
-
 
 export interface SignInResponse {
   message: string;
@@ -32,16 +29,6 @@ export interface TwoFactorVerifyResponse {
 }
 
 class AuthService {
-  /**
-   * Returns an object containing the Authorization header with a Bearer token
-   * if the token exists in local storage, otherwise returns an empty object.
-   * @returns {{ Authorization: string } | {}}
-   * @private
-   */
-  private getAuthHeader() {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
 
   /**
    * Enables two-factor authentication for the current user.
@@ -49,10 +36,9 @@ class AuthService {
    * @throws An error if the request fails.
    */
   async enable2FA(): Promise<TwoFactorAuthResponse> {
-    const response = await axios.post(
-      `${API_URL}/enable-2fa/`,
-      {},
-      { headers: this.getAuthHeader() }
+    const response = await apiClient.post<TwoFactorAuthResponse>(
+      '/marketplace/enable-2fa/',
+      {}
     );
     return response.data;
   }
@@ -66,10 +52,9 @@ class AuthService {
    * @throws An error if the request fails.
    */
   async verify2FA(token: string, secret: string): Promise<TwoFactorVerifyResponse> {
-    const response = await axios.post(
-      `${API_URL}/verify-2fa/`,
-      { token, secret },
-      { headers: this.getAuthHeader() }
+    const response = await apiClient.post<TwoFactorVerifyResponse>(
+      '/marketplace/verify-2fa/',
+      { token, secret }
     );
     return response.data;
   }
@@ -79,9 +64,8 @@ class AuthService {
    * @returns An object containing a boolean indicating whether 2FA is enabled and a boolean indicating whether 2FA has been verified for the current user.
    */
   async get2FAStatus(): Promise<TwoFactorStatusResponse> {
-    const response = await axios.get(
-      `${API_URL}/2fa-status/`,
-      { headers: this.getAuthHeader() }
+    const response = await apiClient.get<TwoFactorStatusResponse>(
+      '/marketplace/2fa-status/'
     );
     return response.data;
   }
@@ -91,10 +75,9 @@ class AuthService {
    * @returns An object indicating success or failure of the operation
    */
   async disable2FA(): Promise<TwoFactorVerifyResponse> {
-    const response = await axios.post(
-      `${API_URL}/disable-2fa/`,
-      {},
-      { headers: this.getAuthHeader() }
+    const response = await apiClient.post<TwoFactorVerifyResponse>(
+      '/marketplace/disable-2fa/',
+      {}
     );
     return response.data;
   }
@@ -107,10 +90,9 @@ class AuthService {
    * @throws An error if the request fails.
    */
   async validate2FAToken(token: string): Promise<TwoFactorVerifyResponse> {
-    const response = await axios.post(
-      `${API_URL}/validate-2fa/`,
-      { token },
-      { headers: this.getAuthHeader() }
+    const response = await apiClient.post<TwoFactorVerifyResponse>(
+      '/marketplace/validate-2fa/',
+      { token }
     );
     return response.data;
   }
@@ -122,7 +104,7 @@ class AuthService {
  * @returns A promise that resolves to an object containing the new access token.
  */
   async refreshToken(refreshToken: string): Promise<{ access: string }> {
-    const response = await axios.post(`${API_URL}/token/refresh/`, {
+    const response = await apiClient.post<{ access: string }>('/token/refresh/', {
       refresh: refreshToken,
     });
     return response.data;
@@ -136,7 +118,7 @@ class AuthService {
  * @returns A Promise that resolves to a SignInResponse containing a message and token if successful.
  */
   async signIn(username: string, password: string): Promise<SignInResponse> {
-    const response = await axios.post(`${API_URL}/signin/`, {
+    const response = await apiClient.post<SignInResponse>('/signin/', {
         username,
         password,
     });
@@ -153,7 +135,7 @@ class AuthService {
  * @returns A Promise that resolves to a SignUpResponse containing a message.
  */
   async signUp(username: string, email: string, password: string): Promise<SignUpResponse> {
-    const response = await axios.post(`${API_URL}/signup/`, {
+    const response = await apiClient.post<SignUpResponse>('/signup/', {
         username,
         email,
         password,
@@ -168,7 +150,7 @@ class AuthService {
    * @returns A Promise that resolves to a ForgotPasswordResponse containing a message.
    */
   async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-    const response = await axios.post(`${API_URL}/forgot-password/`, {
+    const response = await apiClient.post<ForgotPasswordResponse>('/forgot-password/', {
         email,
     });
     return response.data;

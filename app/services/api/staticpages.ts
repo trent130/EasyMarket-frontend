@@ -1,4 +1,5 @@
 import apiClient from '../api-client';
+import { AxiosResponse } from 'axios';
 
 export interface StaticPage {
   id: number;
@@ -65,69 +66,69 @@ export interface MetaTags {
 
 export const staticPagesApi = {
   // Static Pages
-  getPage: async (slug: string) => {
+  getPage: async (slug: string): Promise<StaticPage> => {
     const response = await apiClient.get<StaticPage>(`/api/pages/${slug}/`);
     return response.data;
   },
 
-  getHomePage: async () => {
+  getHomePage: async (): Promise<StaticPage> => {
     const response = await apiClient.get<StaticPage>('/api/pages/home/');
     return response.data;
   },
 
-  getPageMeta: async (slug: string) => {
+  getPageMeta: async (slug: string): Promise<MetaTags> => {
     const response = await apiClient.get<MetaTags>(`/api/pages/${slug}/meta/`);
     return response.data;
   },
 
   // FAQs
-  getAllFAQs: async () => {
+  getAllFAQs: async (): Promise<FAQ[]> => {
     const response = await apiClient.get<FAQ[]>('/api/faqs/');
     return response.data;
   },
 
-  getFAQsByCategory: async () => {
+  getFAQsByCategory: async (): Promise<FAQCategory[]> => {
     const response = await apiClient.get<FAQCategory[]>('/api/faqs/categories/');
     return response.data;
   },
 
-  searchFAQs: async (query: string) => {
+  searchFAQs: async (query: string): Promise<FAQ[]> => {
     const response = await apiClient.get<FAQ[]>('/api/faqs/search/', {
       params: { q: query }
     });
-    return response;
+    return response.data;
   },
 
   // Contact
-  sendContactMessage: async (data: ContactMessage) => {
+  sendContactMessage: async (data: ContactMessage): Promise<any> => {
     const response = await apiClient.post('/api/contact/', data);
     return response.data;
   },
 
   // Testimonials
-  getTestimonials: async () => {
+  getTestimonials: async (): Promise<Testimonial[]> => {
     const response = await apiClient.get<Testimonial[]>('/api/testimonials/');
     return response.data;
   },
 
-  getFeaturedTestimonials: async () => {
+  getFeaturedTestimonials: async (): Promise<Testimonial[]> => {
     const response = await apiClient.get<Testimonial[]>('/api/testimonials/featured/');
     return response.data;
   },
 
-  addTestimonial: async (data: Omit<Testimonial, 'id' | 'student' | 'created_at' | 'is_featured'>) => {
+  addTestimonial: async (data: Omit<Testimonial, 'id' | 'student' | 'created_at' | 'is_featured'>): Promise<Testimonial> => {
     const response = await apiClient.post<Testimonial>('/api/testimonials/', data);
     return response.data;
   },
 
   // Site Settings
-  getSiteSettings: async () => {
+  getSiteSettings: async (): Promise<SiteSettings> => {
     const response = await apiClient.get<SiteSettings>('/api/settings/');
     return response.data;
   },
 
   // Newsletter
-  subscribeNewsletter: async (email: string, name?: string) => {
+  subscribeNewsletter: async (email: string, name?: string): Promise<any> => {
     const response = await apiClient.post('/api/newsletter/subscribe/', {
       email,
       name
@@ -141,7 +142,7 @@ export const staticPagesApi = {
     subject: string;
     description: string;
     screenshot?: File;
-  }) => {
+  }): Promise<any> => {
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
       if (value !== undefined) {
@@ -158,30 +159,30 @@ export const staticPagesApi = {
   },
 
   // SEO
-  getSitemap: async () => {
+  getSitemap: async (): Promise<any> => {
     const response = await apiClient.get('/api/seo/sitemap/');
     return response.data;
   },
 
-  getRobots: async () => {
+  getRobots: async (): Promise<any> => {
     const response = await apiClient.get('/api/seo/robots/');
     return response.data;
   },
 
-  getMetaTags: async () => {
+  getMetaTags: async (): Promise<MetaTags> => {
     const response = await apiClient.get<MetaTags>('/api/seo/meta-tags/');
     return response.data;
   },
 
   // Analytics
-  getPageViews: async (slug: string) => {
+  getPageViews: async (slug: string): Promise<any> => {
     const response = await apiClient.get(`/api/analytics/page-views/`, {
       params: { slug }
     });
     return response.data;
   },
 
-  getPopularPages: async () => {
+  getPopularPages: async (): Promise<any> => {
     const response = await apiClient.get('/api/analytics/popular-pages/');
     return response.data;
   }

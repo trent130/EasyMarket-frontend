@@ -1,5 +1,6 @@
+import apiClient from "../api-client";
 import { PaginatedResponse, Student } from "@/types/common";
-import { fetchWrapper } from "@/utils/fetchWrapper";
+import { AxiosResponse } from "axios";
 
 interface StudentQueryParams {
     page?: number;
@@ -12,21 +13,17 @@ interface StudentQueryParams {
 
 // Merged content from students.ts and studentsApi.ts
 export const studentFunctions = {
-        getStudents: (params?: Record<string, string | number>) =>
-            fetchWrapper<PaginatedResponse<Student>>('/api/students', { params }),
-        
-        getStudentDetails: (id: number) =>
-            fetchWrapper<Student>(`/api/students/${id}`),
-        updateStudent: (id: number, data: Partial<Student>) =>
-            fetchWrapper(`/api/students/${id}`, {
-                method: 'PUT',
-                body: JSON.stringify(data)
-            }),
-        
-        deleteStudent: (id: number) =>
-            fetchWrapper(`/api/students/${id}`, {
-                method: 'DELETE'
-            })
+        getStudents: (params?: Record<string, string | number>): Promise<PaginatedResponse<Student>> =>
+            apiClient.get<PaginatedResponse<Student>>('/api/students', { params }).then(response => response.data),
+
+        getStudentDetails: (id: number): Promise<Student> =>
+            apiClient.get<Student>(`/api/students/${id}`).then(response => response.data),
+
+        updateStudent: (id: number, data: Partial<Student>): Promise<any> =>
+            apiClient.put(`/api/students/${id}`, data).then(response => response.data),
+
+        deleteStudent: (id: number): Promise<any> =>
+            apiClient.delete(`/api/students/${id}`).then(response => response.data)
 };
 
 // Add any additional functions or logic as needed
