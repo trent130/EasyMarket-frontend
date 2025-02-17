@@ -1,5 +1,6 @@
-import axios from 'axios';
+import apiClient from '../../lib/api-client';
 import type { Review, User } from '../../types/common';
+import { AxiosResponse } from 'axios';
 
 interface ReviewQueryParams {
   productId?: number;
@@ -12,43 +13,27 @@ interface ReviewQueryParams {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/products/api';
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add response interceptor for error handling
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
-
 // Reviews
 export const fetchReviews = async (params?: ReviewQueryParams): Promise<Review[]> => {
-  const { data } = await apiClient.get<Review[]>('/products/reviews/', { params });
-  return data;
+  const response = await apiClient.get<Review[]>('/products/reviews/', { params });
+  return response.data;
 };
 
 // Create Review
 export const createReview = async (data: Partial<Review>): Promise<Review> => {
-  const { data: responseData } = await apiClient.post<Review>('/products/reviews/', data);
-  return responseData;
+  const response = await apiClient.post<Review>('/products/reviews/', data);
+  return response.data;
 };
 
 // Update Review
 export const updateReview = async (id: number, data: Partial<Review>): Promise<Review> => {
-  const { data: responseData } = await apiClient.put<Review>(`/products/reviews/${id}`, data);
-  return responseData;
+  const response = await apiClient.put<Review>(`/products/reviews/${id}`, data);
+  return response.data;
 };
 
 // Delete Review
 export const deleteReview = async (id: number): Promise<void> => {
-  await apiClient.delete(`/products/reviews/${id}`);
+  await apiClient.delete<void>(`/products/reviews/${id}`);
 };
 
 export default apiClient;

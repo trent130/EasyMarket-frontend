@@ -1,9 +1,10 @@
-import { fetchWrapper } from '../../utils/fetchWrapper';
+import apiClient from '../api-client';
 import { User } from '../../types/common';
-import { 
+import {
     PublicKeyCredentialCreationOptions,
     PublicKeyCredentialRequestOptions,
 } from '@simplewebauthn/typescript-types';
+import { AxiosResponse } from 'axios';
 
 export interface SecurityKey {
     id: string;
@@ -23,65 +24,42 @@ interface ProfileUpdateData {
     avatar?: File;
 }
 
-interface FetchOptionsWithBlob extends RequestInit {
-    params?: Record<string, string | number>;
-    blob?: boolean;
-}
-
-async function fetchWrapperBlob(endpoint: string, options?: FetchOptionsWithBlob): Promise<Blob> {
-    const response = await fetch(endpoint, options);
-    if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`);
-    }
-    return response.blob();
-}
-
 export const profileApi = {
-    updateProfile: (formData: FormData) =>
-        fetchWrapper<User>('/api/user/profile', {
-            method: 'PUT',
-            body: formData,
-            headers: {} // Let browser set content-type for FormData
-        }),
-
-    getWebAuthnRegistrationOptions: () =>
-        fetchWrapper<PublicKeyCredentialCreationOptions>('/api/auth/webauthn/register-options'),
-
-    verifyWebAuthnRegistration: (credential: any, keyName: string) =>
-        fetchWrapper('/api/auth/webauthn/verify-registration', {
-            method: 'POST',
-            body: JSON.stringify({ credential, keyName })
-        }),
-
-    getWebAuthnAuthOptions: () =>
-        fetchWrapper<PublicKeyCredentialRequestOptions>('/api/auth/webauthn/auth-options'),
-
-    verifyWebAuthnAuthentication: (credential: any) =>
-        fetchWrapper('/api/auth/webauthn/verify-authentication', {
-            method: 'POST',
-            body: JSON.stringify(credential)
-        }),
-
-    getSecurityKeys: () =>
-        fetchWrapper<SecurityKey[]>('/api/user/security-keys'),
-
-    removeSecurityKey: (keyId: string) =>
-        fetchWrapper(`/api/user/security-keys/${keyId}`, {
-            method: 'DELETE'
-        }),
-
-    exportUserData: () =>
-        fetchWrapperBlob('/api/user/data-export', {
-            method: 'GET',
+    updateProfile: (formData: FormData): Promise<User> =>
+        apiClient.put<User>('/api/user/profile', formData, {
             headers: {
-                'Accept': 'application/json',
+                'Content-Type': 'multipart/form-data' // Let browser set content-type for FormData
             }
-        }),
+        }).then(response => response.data),
 
-    deleteAccount: () =>
-        fetchWrapper('/api/user/delete-account', {
-            method: 'POST'
-        }),
+    getWebAuthnRegistrationOptions: (): Promise<PublicKeyCredentialCreationOptions> =>
+        apiClient.get<PublicKeyCredentialCreationOptions>('/api/auth/webauthn/register-options').then(response => response.data),
+
+    verifyWebAuthnRegistration: (credential: any, keyName: string): Promise<any> => // Replace 'any' with appropriate type if available
+        apiClient.post('/api/auth/webauthn/verify-registration', { credential, keyName }).then(response => response.data),
+
+    getWebAuthnAuthOptions: (): Promise<PublicKeyCredentialRequestOptions> =>
+        apiClient.get<PublicKeyCredentialRequestOptions>('/api/auth/webauthn/auth-options').then(response => response.data),
+
+    verifyWebAuthnAuthentication: (credential: any): Promise<any> => // Replace 'any' with appropriate type if available
+        apiClient.post('/api/auth/webauthn/verify-authentication', credential).then(response => response.data),
+
+    getSecurityKeys: (): Promise<SecurityKey[]> =>
+        apiClient.get<SecurityKey[]>('/api/user/security-keys').then(response => response.data),
+
+    removeSecurityKey: (keyId: string): Promise<any> => // Replace 'any' with appropriate type if available
+        apiClient.delete(`/api/user/security-keys/${keyId}`).then(response => response.data),
+
+    exportUserData: (): Promise<Blob> =>
+        apiClient.get('/api/user/data-export', {
+            responseType: 'blob',
+            headers: {
+                'Accept': 'application/json' //Added accept type
+            }
+        }).then(response => response.data),
+
+    deleteAccount: (): Promise<any> => // Replace 'any' with appropriate type if available
+        apiClient.post('/api/user/delete-account').then(response => response.data),
 };
 
 // impimentations in the backend 
