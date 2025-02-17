@@ -1,4 +1,5 @@
-import { fetchWrapper } from '../../utils/fetchWrapper';
+import apiClient from '../api-client';
+import { AxiosResponse } from 'axios';
 
 interface AnalyticsData {
     views: number;
@@ -25,20 +26,20 @@ interface AnalyticsParams {
 }
 
 export const analyticsApi = {
-    getDashboardMetrics: (params: Record<string, string | number>) =>
-        fetchWrapper<AnalyticsData>('/api/analytics/dashboard', { params }),
-    
-    getProductMetrics: (productId: number, params: Record<string, string | number>) =>
-        fetchWrapper<AnalyticsData>(`/api/analytics/products/${productId}`, { params }),
-    getUserBehavior: (params: Record<string, string | number>) =>
-        fetchWrapper<AnalyticsData>('/api/analytics/user-behavior', { params }),
-    
-    exportReport: (params: Record<string, string | number>) =>
-        fetchWrapper<Blob>('/api/analytics/export', { 
-            params
-        }),
+    getDashboardMetrics: (params: Record<string, string | number>): Promise<AnalyticsData> =>
+        apiClient.get<AnalyticsData>('/api/analytics/dashboard', { params }).then(response => response.data),
+
+    getProductMetrics: (productId: number, params: Record<string, string | number>): Promise<AnalyticsData> =>
+        apiClient.get<AnalyticsData>(`/api/analytics/products/${productId}`, { params }).then(response => response.data),
+
+    getUserBehavior: (params: Record<string, string | number>): Promise<AnalyticsData> =>
+        apiClient.get<AnalyticsData>('/api/analytics/user-behavior', { params }).then(response => response.data),
+
+    exportReport: (params: Record<string, string | number>): Promise<Blob> =>
+        apiClient.get('/api/analytics/export', {
+            params,
+            responseType: 'blob' // Important for binary data!
+        }).then(response => response.data),
 };
 
 export type AnalyticsApi = typeof analyticsApi;
-
-// backend implimentations needed here 

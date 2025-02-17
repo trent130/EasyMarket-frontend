@@ -2,8 +2,8 @@ import apiClient from "../api-client";
 import { Student } from "./students";
 import { Product } from "../../types/product";
 import { Orders } from "./orders";
-import { AdminDashboardData } from "@/types/admin";
-import { fetchWrapper } from "@/utils/fetchWrapper";
+import { AdminDashboardData, UserManagementData, UserManagementFilters } from '../../types/admin';
+import { AxiosResponse } from "axios";
 
 export interface AdminStats {
   total_users: number;
@@ -21,48 +21,37 @@ export interface AdminStats {
   };
 }
 
-export interface UserManagementFilters {
-  role?: "student" | "admin" | "moderator";
-  status?: "active" | "suspended" | "pending";
-  verified?: boolean;
-  search?: string;
-  page?: number;
-}
-
 export const adminApi = {
   // Dashboard Statistics
-  getDashboardStats: async () => {
-    const response = await apiClient.get<AdminStats>("/admin/dashboard/stats/");
-    return response.data;
-  },
-  getDashboardData: () =>
-    fetchWrapper<AdminDashboardData>("/api/admin/dashboard"),
-
-  updateUserStatus: (userId: number, status: string) =>
-    fetchWrapper(`/api/admin/users/${userId}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-    }),
+  getDashboardData: (): Promise<AdminDashboardData> =>
+    apiClient.get<AdminDashboardData>('/api/admin/dashboard').then(response => response.data),
 
   // User Management
-  getUsers: async (filters?: UserManagementFilters) => {
-    const response = await apiClient.get<{
+  getUsers: (filters?: UserManagementFilters): Promise<{
+    results: Student[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> => {
+    return apiClient.get<{
       results: Student[];
       total: number;
       page: number;
       total_pages: number;
-    }>("/admin/users/", { params: filters });
-    return response.data;
+    }>("/admin/users/", { params: filters }).then(response => response.data);
   },
 
-  suspendUser: async (userId: number, reason: string) => {
+  updateUserStatus: (userId: number, status: string): Promise<void> =>
+    apiClient.put<void>(`/api/admin/users/${userId}/status`, { status }).then(() => {}),
+
+  suspendUser: async (userId: number, reason: string): Promise<any> => {
     const response = await apiClient.post(`/admin/users/${userId}/suspend/`, {
       reason,
     });
     return response.data;
   },
 
-  activateUser: async (userId: number) => {
+  activateUser: async (userId: number): Promise<any> => {
     const response = await apiClient.post(`/admin/users/${userId}/activate/`);
     return response.data;
   },
@@ -73,7 +62,11 @@ export const adminApi = {
     category?: string;
     search?: string;
     page?: number;
-  }) => {
+  }): Promise<{
+    results: Product[];
+    total: number;
+    page: number;
+  }> => {
     const response = await apiClient.get<{
       results: Product[];
       total: number;
@@ -82,7 +75,7 @@ export const adminApi = {
     return response.data;
   },
 
-  removeProduct: async (productId: number, reason: string) => {
+  removeProduct: async (productId: number, reason: string): Promise<void> => {
     await apiClient.post(`/admin/products/${productId}/remove/`, { reason });
   },
 
@@ -93,7 +86,11 @@ export const adminApi = {
     start_date?: string;
     end_date?: string;
     page?: number;
-  }) => {
+  }): Promise<{
+    results: Orders[];
+    total: number;
+    page: number;
+  }> => {
     const response = await apiClient.get<{
       results: Orders[];
       total: number;
@@ -106,7 +103,7 @@ export const adminApi = {
   getVerificationRequests: async (params?: {
     status?: "pending" | "approved" | "rejected";
     page?: number;
-  }) => {
+  }): Promise<any> => {
     const response = await apiClient.get("/admin/verifications/", { params });
     return response.data;
   },
@@ -115,7 +112,7 @@ export const adminApi = {
     requestId: number,
     action: "approve" | "reject",
     reason?: string
-  ) => {
+  ): Promise<any> => {
     const response = await apiClient.post(
       `/admin/verifications/${requestId}/${action}/`,
       { reason }
@@ -128,7 +125,7 @@ export const adminApi = {
     type?: "user" | "product" | "review";
     status?: "pending" | "resolved";
     page?: number;
-  }) => {
+  }): Promise<any> => {
     const response = await apiClient.get("/admin/reports/", { params });
     return response.data;
   },
@@ -137,7 +134,7 @@ export const adminApi = {
     reportId: number,
     action: "resolve" | "dismiss",
     notes?: string
-  ) => {
+  ): Promise<any> => {
     const response = await apiClient.post(
       `/admin/reports/${reportId}/${action}/`,
       { notes }
@@ -146,7 +143,7 @@ export const adminApi = {
   },
 
   // System Settings
-  getSystemSettings: async () => {
+  getSystemSettings: async (): Promise<any> => {
     const response = await apiClient.get("/admin/settings/");
     return response.data;
   },
@@ -157,7 +154,7 @@ export const adminApi = {
     max_file_size?: number;
     allowed_file_types?: string[];
     notification_settings?: Record<string, boolean>;
-  }) => {
+  }): Promise<any> => {
     const response = await apiClient.put("/admin/settings/", settings);
     return response.data;
   },
@@ -169,7 +166,7 @@ export const adminApi = {
     start_date?: string;
     end_date?: string;
     page?: number;
-  }) => {
+  }): Promise<any> => {
     const response = await apiClient.get("/admin/audit-logs/", { params });
     return response.data;
   },
@@ -180,24 +177,24 @@ export const adminApi = {
     period: "day" | "week" | "month" | "year";
     start_date?: string;
     end_date?: string;
-  }) => {
+  }): Promise<any> => {
     const response = await apiClient.get("/admin/analytics/", { params });
     return response.data;
   },
 
   // System Health
-  getSystemHealth: async () => {
+  getSystemHealth: async (): Promise<any> => {
     const response = await apiClient.get("/admin/system/health/");
     return response.data;
   },
 
   // Backup Management
-  createBackup: async () => {
+  createBackup: async (): Promise<any> => {
     const response = await apiClient.post("/admin/system/backup/");
     return response.data;
   },
 
-  restoreBackup: async (backupId: string) => {
+  restoreBackup: async (backupId: string): Promise<any> => {
     const response = await apiClient.post(`/admin/system/restore/${backupId}/`);
     return response.data;
   },
