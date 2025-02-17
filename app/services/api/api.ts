@@ -1,7 +1,91 @@
-import apiClient from '../api-client';
+import apiClient from '../../lib/api-client';
+import { AxiosResponse } from "axios";
+import {
+    Order,
+    LoginCredentials,
+    AuthTokens,
+    ApiError
+} from '../../types/api';
 
-// API service methods
+// Error handler
+const handleApiError = (error: { response?: { data?: { message?: string }; status?: number } }): never => {
+    const apiError: ApiError = {
+        message: error.response?.data?.message || 'An error occurred',
+        status: error.response?.status || 500
+    };
+
+    if (isApiError(error)) {
+        apiError.message = error.response?.data?.message || 'An error occurred';
+        apiError.status = error.response?.status || apiError.status;
+    }
+    throw apiError;
+};
+
+/**
+ * Checks if an error is an ApiError.
+ *
+ * @param error - The error to check.
+ * @returns True if the error is an ApiError, false otherwise.
+ */
+const isApiError = (error: unknown): error is { response?: { data?: { message?: string }; status?: number } } => {
+    return typeof error === 'object' && error !== null && 'response' in error;
+};
+
 export const apiService = {
+    // Auth
+    login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
+        try {
+            const response = await apiClient.post<AuthTokens>('/token/', credentials);
+            return response.data;
+        } catch (error) {
+            if (isApiError(error)) {
+                throw handleApiError(error);
+            } else {
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+            }
+        }
+    },
+
+    refreshToken: async (refreshToken: string): Promise<AuthTokens> => {
+        try {
+            const response = await apiClient.post<AuthTokens>('/token/refresh/', { refresh: refreshToken });
+            return response.data;
+        } catch (error) {
+            if (isApiError(error)) {
+                throw handleApiError(error);
+            } else {
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+            }
+        }
+    },
+
+    // Orders
+    createOrder: async (orderData: Partial<Order>): Promise<Order> => {
+        try {
+            const response = await apiClient.post<Order>('/orders/', orderData);
+            return response.data;
+        } catch (error) {
+            if (isApiError(error)) {
+                throw handleApiError(error);
+            } else {
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+            }
+        }
+    },
+
+    fetchOrders: async (): Promise<Order[]> => {
+        try {
+            const response = await apiClient.get<Order[]>('/orders/');
+            return response.data;
+        } catch (error) {
+            if (isApiError(error)) {
+                throw handleApiError(error);
+            } else {
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+            }
+        }
+    },
+
     // User related endpoints
     user: {
         getProfile: (): Promise<any> => apiClient.get('/user/profile').then(response => response.data), // Replace 'any' with the correct type

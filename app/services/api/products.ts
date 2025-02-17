@@ -1,88 +1,203 @@
 import apiClient from '../../lib/api-client';
-import type { Category, Product, ProductBase } from '../../types/product';
-import type { ApiResponse, SingleResponse, SearchParams } from '../../types/common';
+import type {
+    ProductBase,
+    ProductDetail,
+    ProductSearchFilters,
+    ProductSearchResponse,
+    CreateProductData,
+    UpdateProductData,
+    BulkActionData,
+    UpdateStockData,
+    Category,
+    Product
+} from '../../types/product';
 import { AxiosResponse } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/products/api';
-
-// Products
-export const fetchProducts = async (): Promise<Product[]> => {
-  const response = await apiClient.get<ApiResponse<Product>>('/products/');
-  return response.data.results || [];
+// Error handler
+const handleApiError = (error: any): never => {
+    const message = error.response?.data?.error || 'An error occurred';
+    throw new Error(message);
 };
 
-/**
- * Fetch a product by its ID
- * @param {number} id The product ID.
- * @returns {Promise<Product>} The product.
- */
-export const fetchProductById = async (id: number): Promise<Product> => {
-  const response = await apiClient.get<SingleResponse<Product>>(`/products/${id}/`);
-  return response.data.data;
-};
+export const productService = {
+    // Get all products with pagination and caching
+    getProducts: async (page = 1): Promise<ProductSearchResponse> => {
+        try {
+            const response = await apiClient.get<ProductSearchResponse>('/products/api/products/', {
+                params: { page }
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 
-/**
- * Fetch a product by its slug.
- * @param {string} slug The product slug.
- * @returns {Promise<Product>} The product object.
- */
-export const fetchProductBySlug = async (slug: string): Promise<Product> => {
-  const response = await apiClient.get<SingleResponse<Product>>(`/products/${slug}/`);
-  return response.data.data;
-};
+    // Get single product by ID or slug
+    getProduct: async (identifier: number | string): Promise<ProductDetail> => {
+        try {
+            const response = await apiClient.get<ProductDetail>(`/products/api/products/${identifier}/`);
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 
-// Search
-export const searchProducts = async (params: SearchParams): Promise<Product[]> => {
-  const response = await apiClient.get<ApiResponse<Product>>('/products/search/', { params });
-  return response.data.results || [];
-};
+    // Search products with filters
+    searchProducts: async (filters: ProductSearchFilters): Promise<ProductSearchResponse> => {
+        try {
+            const response = await apiClient.get<ProductSearchResponse>('/products/api/products/search/', {
+                params: filters
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 
-// Featured Products
-export const fetchFeaturedProducts = async (): Promise<Product[]> => {
-  const response = await apiClient.get<ApiResponse<Product>>('/products/featured/');
-  return response.data.results || [];
-};
+    // Get featured products
+    getFeaturedProducts: async (): Promise<ProductBase[]> => {
+        try {
+            const response = await apiClient.get<ProductBase[]>('/products/api/products/featured/');
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 
-// Trending Products
-export const fetchTrendingProducts = async (): Promise<Product[]> => {
-  const response = await apiClient.get<ApiResponse<Product>>('/products/trending/');
-  return response.data.results || [];
-};
+    // Get trending products
+    getTrendingProducts: async (): Promise<ProductBase[]> => {
+        try {
+            const response = await apiClient.get<ProductBase[]>('/products/api/products/trending/');
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 
-// Categories
-export const fetchCategories = async (): Promise<Category[]> => {
-  const response = await apiClient.get<Category[]>('/categories/');
-  return response.data;
-};
+    // Create new product
+    createProduct: async (data: CreateProductData): Promise<ProductDetail> => {
+        try {
+            // Handle file upload with FormData
+            const formData = new FormData();
+            Object.entries(data).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    formData.append(key, value);
+                }
+            });
 
-// Create Product
-export const createProduct = async (data: Partial<Product>): Promise<Product> => {
-  const response = await apiClient.post<SingleResponse<Product>>('/products/', data);
-  return response.data.data;
-};
+            const response = await apiClient.post<ProductDetail>('/products/api/products/', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 
-// Update Product
-export const updateProduct = async (id: number, data: Partial<Product>): Promise<Product> => {
-  const response = await apiClient.put<SingleResponse<Product>>(`/products/${id}/`, data);
-  return response.data.data;
-};
+    // Update existing product
+    updateProduct: async (id: number, data: UpdateProductData): Promise<ProductDetail> => {
+        try {
+            // Handle file upload with FormData
+            const formData = new FormData();
+            Object.entries(data).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    formData.append(key, value);
+                }
+            });
 
-// Delete Product
-export const deleteProduct = async (id: number): Promise<void> => {
-  await apiClient.delete(`/products/${id}/`);
-};
+            const response = await apiClient.patch<ProductDetail>(`/products/api/products/${id}/`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
 
-// Get Product Details
-export const getProductDetails = async (slug: string): Promise<Product> => {
-  try {
-    const response = await apiClient.get<Product>(`/products/${slug}/`);
-    return response.data;
-  } catch (error) {
-    if (error.response?.status === 404) {
-      throw new Error('Product not found');
+    // Delete product (soft delete)
+    deleteProduct: async (id: number): Promise<void> => {
+        try {
+            await apiClient.delete(`/products/api/products/${id}/`);
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // Update product stock
+    updateStock: async (id: number, data: UpdateStockData): Promise<ProductDetail> => {
+        try {
+            const response = await apiClient.post<ProductDetail>(
+                `/products/api/products/${id}/update_stock/`,
+                data
+            );
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // Perform bulk actions on products
+    bulkAction: async (data: BulkActionData): Promise<void> => {
+        try {
+            await apiClient.post('/products/api/products/bulk_action/', data);
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // Get all categories
+    getCategories: async (): Promise<Category[]> => {
+        try {
+            const response = await apiClient.get<Category[]>('/products/api/categories/');
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+    // Get products by category
+    getProductsByCategory: async (slug: string, page = 1): Promise<ProductSearchResponse> => {
+        try {
+            const response = await apiClient.get<ProductSearchResponse>(
+                `/products/api/categories/${slug}/products/`,
+                {
+                    params: { page }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            throw handleApiError(error);
+        }
+    },
+
+        /**
+     * Fetches detailed information about a product using its slug.
+     *
+     * @param slug - The unique identifier for the product.
+     * @returns A promise that resolves to a Product object containing detailed information.
+     */
+    getProductDetails: async (slug: string): Promise<Product> => {
+        try {
+            const response = await apiClient.get<Product>(`/products/${slug}/`);
+            return response.data;
+        } catch (error) {
+            if (error.response?.status === 404) {
+                throw new Error('Product not found');
+            }
+            throw error;
+        }
+    },
+
+    // Cache management
+    clearProductCache: async (): Promise<void> => {
+        try {
+            await apiClient.post('/products/api//products/clear_cache/');
+        } catch (error) {
+            throw handleApiError(error);
+        }
     }
-    throw error;
-  }
 };
-
-export default apiClient;
