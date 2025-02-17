@@ -17,10 +17,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Button } from "./components/ui/button";
-import {
-  fetchFeaturedProducts,
-  fetchTrendingProducts,
-} from "./services/api/products";
+import { productService } from "./services/api/products";
 import ProductCard from "./components/Product/ProductCard";
 import type { Product } from "./types/product";
 import Footer from "./components/Footer";
@@ -35,8 +32,8 @@ export default function HomePage() {
     const loadProducts = async () => {
       try {
         const [featured, trending] = await Promise.all([
-          fetchFeaturedProducts(),
-          fetchTrendingProducts(),
+          productService.getFeaturedProducts(),
+          productService.getTrendingProducts(),
         ]);
 
         setFeaturedProducts(featured);

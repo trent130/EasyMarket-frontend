@@ -78,13 +78,14 @@ apiClient.interceptors.response.use(
 
 // Utility: Handle Logout
 function handleLogout() {
-    // Clear local storage
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
+  // Prevent infinite reload
+  if (window.location.pathname === '/auth/signin') return;
 
-    // Redirect to the sign-in page
-    window.location.href = '/auth/signin'; // Use window.location.href for redirection
-
+  // Clear storage and redirect
+  localStorage.removeItem('token');
+  localStorage.removeItem('refreshToken');
+  window.location.href = '/auth/signin';
 }
+
 
 export default apiClient;

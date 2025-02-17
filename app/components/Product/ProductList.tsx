@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { debounce } from 'lodash';
-import { productService } from '../../services/product';
+import { productService } from '@/services/api/products';
 import type { ProductBase, ProductSearchFilters, Category } from '../../types/product';
 import ProductCard from './ProductCard';
 import ProductFilter from './ProductFilter';
