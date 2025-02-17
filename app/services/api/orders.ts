@@ -1,11 +1,7 @@
-import { fetchWrapper } from "@/utils/fetchWrapper";
 import apiClient from "../api-client";
 import { OrderStatus } from "@/types/orders";
 import { ApiError, Order } from "@/types/api";
-// import { handleApiError } from "@/utils/errorHandling";
-// import { handleApiError } from "@/utils/errorHandling";
-// import { fetchWrapper } from '../../utils/fetchWrapper';
-// import { Orders  } from '../../types/orders'; //OrderStatus
+import { AxiosResponse } from "axios";
 
 const handleApiError = (error: { response?: { data?: { message?: string }; status?: number } }): never => {
   const apiError: ApiError = {
@@ -37,14 +33,15 @@ export interface CreateOrderInput {
 
 export const ordersApi = {
   // Get all orders for current user
-  getAll: async () => {
+  getAll: async (): Promise<Order[]> => {
     const response = await apiClient.get<Order[]>("/orders/orders/");
     return response.data;
   },
+
   getOrders: async (params?: Record<string, string | number>): Promise<Order[]> => {
     try {
       const response = await apiClient.get<Order[]>('/api/orders', { params });
-      return response;
+      return response.data;
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -57,7 +54,7 @@ export const ordersApi = {
   create: async (data: CreateOrderInput): Promise<Order> => {
     try {
       const response = await apiClient.post<Order>('/orders/orders/', data);
-      return response;
+      return response.data;
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -68,13 +65,13 @@ export const ordersApi = {
   },
 
   // Get single order by ID
-  getById: async (id: number) => {
+  getById: async (id: number): Promise<Order> => {
     const response = await apiClient.get<Order>(`/orders/orders/${id}/`);
     return response.data;
   },
 
   // Cancel order
-  cancel: async (id: number) => {
+  cancel: async (id: number): Promise<Order> => {
     const response = await apiClient.post<Order>(
       `/orders/orders/${id}/cancel/`
     );
@@ -82,7 +79,7 @@ export const ordersApi = {
   },
 
   // Update shipping address
-  updateShippingAddress: async (id: number, address: string) => {
+  updateShippingAddress: async (id: number, address: string): Promise<Order> => {
     const response = await apiClient.patch<Order>(`/orders/orders/${id}/`, {
       shipping_address: address,
     });
@@ -95,7 +92,12 @@ export const ordersApi = {
     start_date?: string;
     end_date?: string;
     page?: number;
-  }) => {
+  }): Promise<{
+    results: Order[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> => {
     const response = await apiClient.get<{
       results: Order[];
       total: number;
@@ -106,7 +108,17 @@ export const ordersApi = {
   },
 
   // Track order
-  trackOrder: async (id: number) => {
+  trackOrder: async (id: number): Promise<{
+    status: Order["status"];
+    tracking_number?: string;
+    tracking_url?: string;
+    estimated_delivery?: string;
+    tracking_history: {
+      status: string;
+      location: string;
+      timestamp: string;
+    }[];
+  }> => {
     const response = await apiClient.get<{
       status: Order["status"];
       tracking_number?: string;
@@ -126,7 +138,12 @@ export const ordersApi = {
     period: "day" | "week" | "month" | "year";
     start_date?: string;
     end_date?: string;
-  }) => {
+  }): Promise<{
+    total_orders: number;
+    total_amount: number;
+    average_order_value: number;
+    orders_by_status: Record<Order["status"], number>;
+  }> => {
     const response = await apiClient.get<{
       total_orders: number;
       total_amount: number;
@@ -137,7 +154,7 @@ export const ordersApi = {
   },
 
   // Generate order invoice
-  generateInvoice: async (id: number) => {
+  generateInvoice: async (id: number): Promise<Blob> => {
     const response = await apiClient.get(`/orders/orders/${id}/invoice/`, {
       responseType: "blob",
     });
@@ -145,7 +162,10 @@ export const ordersApi = {
   },
 
   // Verify order payment
-  verifyPayment: async (id: number, paymentId: string) => {
+  verifyPayment: async (id: number, paymentId: string): Promise<{
+    verified: boolean;
+    order: Order;
+  }> => {
     const response = await apiClient.post<{
       verified: boolean;
       order: Order;
@@ -155,11 +175,8 @@ export const ordersApi = {
     return response.data;
   },
 
-  updateOrderStatus: (id: number, status: OrderStatus) =>
-    fetchWrapper(`/api/orders/${id}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-    }),
+   updateOrderStatus: (id: number, status: OrderStatus): Promise<void> =>
+        apiClient.put<void>(`/api/orders/${id}/status`, { status }).then(() => {}),
 };
 
 // Add any additional functions or logic as needed

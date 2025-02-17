@@ -1,5 +1,6 @@
 import apiClient from '../api-client';
 import type { ApiResponse }  from '../../types/common';
+import { AxiosResponse } from 'axios';
 
 export interface Category {
   id: number;
@@ -13,25 +14,25 @@ export interface Category {
 
 // Categories
 export const fetchCategories = async (): Promise<Category[]> => {
-  const { data } = await apiClient.get<ApiResponse<Category>>('/categories/');
-  return data.results || [];
+  const response = await apiClient.get<ApiResponse<Category>>('/categories/');
+  return response.data.results || [];
 };
 
 export const fetchCategoryBySlug = async (slug: string): Promise<Category> => {
-  const { data } = await apiClient.get<Category>(`/categories/${slug}/`);
-  return data;
+  const response = await apiClient.get<Category>(`/categories/${slug}/`);
+  return response.data;
 };
 
 // Category Products
-export const fetchCategoryProducts = async (slug: string) => {
-  const { data } = await apiClient.get<ApiResponse<Category>>(`/categories/${slug}/products/`);
-  return data.results || [];
+export const fetchCategoryProducts = async (slug: string): Promise<Category[]> => {
+  const response = await apiClient.get<ApiResponse<Category>>(`/categories/${slug}/products/`);
+  return response.data.results || [];
 };
 
 // Featured Categories
 export const fetchFeaturedCategories = async (): Promise<Category[]> => {
-  const { data } = await apiClient.get<ApiResponse<Category>>('/categories/featured/');
-  return data.results || [];
+  const response = await apiClient.get<ApiResponse<Category>>('/categories/featured/');
+  return response.data.results || [];
 };
 
 // Category Statistics
@@ -43,8 +44,6 @@ export interface CategoryStats {
 }
 
 export const fetchCategoryStats = async (categoryId: number): Promise<CategoryStats> => {
-  const { data } = await apiClient.get<CategoryStats>(`/categories/${categoryId}/stats/`);
-  return data;
+  const response = await apiClient.get<CategoryStats>(`/categories/${categoryId}/stats/`);
+  return response.data;
 };
-
-// Add any additional functions or logic as needed

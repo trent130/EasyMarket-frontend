@@ -1,9 +1,8 @@
 import apiClient from '../api-client';
-import  { Product }  from '../../types/product'; // Ensure correct import
-// import { fetchWrapper } from '../../utils/fetchWrapper';
-// import { MarketplaceListing } from '../../types/marketplace';
+import  { Product }  from '../../types/product';
 import { ApiError, WishlistItem } from '../../types/api';
 import { Category, Review, CartItem }  from '../../types/marketplace';
+import { AxiosResponse } from 'axios';
 
 // Error handler
 const handleApiError = (error: { response?: { data?: { message?: string }; status?: number } }): never => {
@@ -34,24 +33,27 @@ export const marketplaceApi = {
   getCategories: async (params?: {
     parent_id?: number;
     include_children?: boolean;
-  }) => {
+  }): Promise<Category[]> => {
     const response = await apiClient.get<Category[]>('/marketplace/categories/', { params });
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   },
 
-  getCategoryDetails: async (slug: string) => {
+  getCategoryDetails: async (slug: string): Promise<Category & {
+    subcategories: Category[];
+    featured_products: Product[];
+  }> => {
     const response = await apiClient.get<Category & {
       subcategories: Category[];
       featured_products: Product[];
     }>(`/marketplace/categories/${slug}/`);
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   },
 
   // Wishlist
   getWishlist: async (): Promise<WishlistItem[]> => {
     try {
       const response = await apiClient.get<WishlistItem[]>('/marketplace/api/wishlist/');
-      return response;
+      return response.data;
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -64,7 +66,7 @@ export const marketplaceApi = {
   addToWishlist: async (productId: number): Promise<WishlistItem> => {
     try {
       const response = await apiClient.post<WishlistItem>('/marketplace/api/wishlist/productId/add/', { product_id: productId });
-      return response;
+      return response.data;
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -76,7 +78,7 @@ export const marketplaceApi = {
 
   removeFromWishlist: async (productId: number): Promise<void> => {
     try {
-      await apiClient.post('/marketplace/api/wishlist/productId/remove/', { product_id: productId });
+      await apiClient.post<void>('/marketplace/api/wishlist/productId/remove/', { product_id: productId });
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -98,7 +100,7 @@ export const marketplaceApi = {
         total_items: number;
         total_amount: number;
       }>('/marketplace/cart/');
-      return response;
+      return response.data;
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -114,7 +116,7 @@ export const marketplaceApi = {
         product_id: productId,
         quantity
       });
-      return response;
+      return response.data;
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -126,7 +128,7 @@ export const marketplaceApi = {
 
   removeFromCart: async (itemId: number): Promise<void> => {
     try {
-      await apiClient.delete(`/marketplace/cart/items/${itemId}/`);
+      await apiClient.delete<void>(`/marketplace/cart/items/${itemId}/`);
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -136,15 +138,15 @@ export const marketplaceApi = {
     }
   },
 
-  updateCartItem: async (itemId: number, quantity: number) => {
+  updateCartItem: async (itemId: number, quantity: number): Promise<CartItem> => {
     const response = await apiClient.patch<CartItem>(`/marketplace/cart/items/${itemId}/`, {
       quantity
     });
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   },
 
-  clearCart: async () => {
-    await apiClient.post('/marketplace/cart/clear/');
+  clearCart: async (): Promise<void> => {
+    await apiClient.post<void>('/marketplace/cart/clear/');
   },
 
   // Reviews
@@ -152,34 +154,39 @@ export const marketplaceApi = {
     rating?: number;
     sort_by?: 'latest' | 'rating';
     page?: number;
-  }) => {
+  }): Promise<{
+    results: Review[];
+    total: number;
+    average_rating: number;
+    rating_distribution: Record<number, number>;
+  }> => {
     const response = await apiClient.get<{
       results: Review[];
       total: number;
       average_rating: number;
       rating_distribution: Record<number, number>;
     }>(`/marketplace/products/${productId}/reviews/`, { params });
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   },
 
   addReview: async (productId: number, data: {
     rating: number;
     comment: string;
-  }) => {
+  }): Promise<Review> => {
     const response = await apiClient.post<Review>(`/marketplace/products/${productId}/reviews/`, data);
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   },
 
   updateReview: async (reviewId: number, data: {
     rating?: number;
     comment?: string;
-  }) => {
+  }): Promise<Review> => {
     const response = await apiClient.patch<Review>(`/marketplace/reviews/${reviewId}/`, data);
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   },
 
-  deleteReview: async (reviewId: number) => {
-    await apiClient.delete(`/marketplace/reviews/${reviewId}/`);
+  deleteReview: async (reviewId: number): Promise<void> => {
+    await apiClient.delete<void>(`/marketplace/reviews/${reviewId}/`);
   },
 
   // Search
@@ -190,7 +197,13 @@ export const marketplaceApi = {
     max_price?: number;
     sort_by?: 'relevance' | 'price_asc' | 'price_desc' | 'newest';
     page?: number;
-  }) => {
+  }): Promise<{
+    results: Product[];
+    total: number;
+    page: number;
+    categories: Category[];
+    price_range: { min: number; max: number };
+  }> => {
     const response = await apiClient.get<{
       results: Product[];
       total: number;
@@ -198,7 +211,7 @@ export const marketplaceApi = {
       categories: Category[];
       price_range: { min: number; max: number };
     }>('/marketplace/search/', { params });
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   },
 
   // Recommendations
@@ -206,10 +219,8 @@ export const marketplaceApi = {
     category?: string;
     limit?: number;
     exclude_ids?: number[];
-  }) => {
+  }): Promise<Product[]> => {
     const response = await apiClient.get<Product[]>('/marketplace/recommendations/', { params });
-    return response; // Adjusted to return the correct data structure
+    return response.data;
   }
 };
-
-// Add any additional functions or logic as needed
