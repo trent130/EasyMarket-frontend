@@ -1,4 +1,4 @@
-import apiClient from '../../lib/api-client';
+import apiClient from '../api-client';
 import { AxiosResponse } from "axios";
 import {
     Order,
@@ -41,7 +41,7 @@ export const apiService = {
             if (isApiError(error)) {
                 throw handleApiError(error);
             } else {
-                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 }});
             }
         }
     },
@@ -54,7 +54,7 @@ export const apiService = {
             if (isApiError(error)) {
                 throw handleApiError(error);
             } else {
-                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 }});
             }
         }
     },
@@ -68,7 +68,7 @@ export const apiService = {
             if (isApiError(error)) {
                 throw handleApiError(error);
             } else {
-                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 }});
             }
         }
     },
@@ -81,7 +81,7 @@ export const apiService = {
             if (isApiError(error)) {
                 throw handleApiError(error);
             } else {
-                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 });
+                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 }});
             }
         }
     },

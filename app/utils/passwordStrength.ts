@@ -18,5 +18,5 @@ export function checkPasswordStrength(password: string): PasswordStrengthResult 
 
 export function isPasswordStrong(password: string): boolean {
   const result = checkPasswordStrength(password);
-  return result.score >= 3; // Considering scores 3 and 4 as strong
+  return result.score >= 4; 
 }

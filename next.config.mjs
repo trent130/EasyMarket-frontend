@@ -18,7 +18,7 @@ const nextConfig = {
   // Suppress deprecation warnings in production
   reactStrictMode: true,
   // Recommended for performance
-  swcMinify: true,
+  // swcMinify: true,
   // Configure image domains
   images: {
     domains: process.env.IMAGE_DOMAINS?.split(',') || ['localhost']

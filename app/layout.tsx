@@ -1,9 +1,8 @@
-'use client'
+"use client";
 
 import './globals.css';
 import { SessionProvider } from 'next-auth/react'
 import Navigation from './components/Navigation'
-import { AppProvider } from './AppContext'
 import { Providers } from './providers'
 import Layout from './components/Layout'
 import DashboardLayout from './components/DashboardLayout'
@@ -24,7 +23,6 @@ export default function RootLayout({
       <body className={isDashboard ? 'bg-gray-100' : ''}>
         <SessionProvider>
           <Providers>
-            <AppProvider>
               <div className="mb-4">
                 <Navigation />
               </div>
@@ -35,8 +33,7 @@ export default function RootLayout({
                 ) : (
                   <Layout>{children}</Layout>
                 )}
-              </main> 
-            </AppProvider>
+              </main>
           </Providers>
         </SessionProvider>
       </body>
