@@ -1,31 +1,19 @@
+'use client';
+
 import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
-import { useSession, signOut, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import SearchBar from './search/SearchBar';
 import NotificationPopup from './NotificationPopup';
-// import { getSession } from '@/utils/sessionManager'
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navigation = () => {
-  const { data: session } = useSession();
+  const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
- /*  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  React.useEffect(() => {
-    const token = localStorage.getItem('authToken');
-
-    if (token) {
-      /* signIn('credentials', {
-        token,
-        callbackUrl: window.location.href,
-      }); 
-      setIsLoggedIn(true);
-    }
-  }, []); */
 
   return (
     <nav className="fixed top-0 left-0 w-full text-black bg-white shadow-lg border-gray-200 p-4 z-50 px-4 mb-4">
@@ -41,12 +29,13 @@ const Navigation = () => {
         </Typography>
 
         {/* Search Bar */}
-        <div className="hidden  md:hidden flex-1 mx-[5%]">
+        <div className="hidden md:block flex-1 mx-[5%]">
           <SearchBar />
         </div>
 
         {/* Hamburger Menu */}
-        <button aria-label='Menu'
+        <button
+          aria-label="Menu"
           className="md:hidden text-black hover:bg-black hover:rounded hover:text-white focus:outline-none"
           onClick={toggleMenu}
         >
@@ -78,13 +67,17 @@ const Navigation = () => {
               Products
             </button>
           </Link>
-          <Link href="/textbook-exchange">
+          <Link href="/dashboard">
             <button className="bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300">
               Dashboard
             </button>
           </Link>
           <Link href="/cart">
-            <button type='button' className="relative bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300" aria-label='Cart'>
+            <button
+              type="button"
+              className="relative bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300"
+              aria-label="Cart"
+            >
               <svg
                 className="w-6 h-6"
                 xmlns="http://www.w3.org/2000/svg"
@@ -102,7 +95,11 @@ const Navigation = () => {
             </button>
           </Link>
           <Link href="/wishlist">
-            <button type="button" aria-label='Wishlist' className="relative bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300">
+            <button
+              type="button"
+              aria-label="Wishlist"
+              className="relative bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300"
+            >
               <svg
                 className="w-6 h-6"
                 xmlns="http://www.w3.org/2000/svg"
@@ -120,46 +117,44 @@ const Navigation = () => {
             </button>
           </Link>
           <NotificationPopup />
-          {session ? (
+          {isAuthenticated ? (
             <div className="flex items-center">
               <Typography variant="body1" className="mr-2">
-                Welcome, 
-                <a href="/user/profile">{session.user?.name}</a>
+                Welcome, <Link href="/user/profile">{user?.name}</Link>
               </Typography>
               <button
                 className="bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300"
-                onClick={() => signOut()}
+                onClick={logout}
               >
                 Logout
               </button>
             </div>
           ) : (
-            <button
-              className="bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300"
-              onClick={() => signIn()}
-            >
-              Sign In
-            </button>
+            <Link href="/auth/signin">
+              <button className="bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300">
+                Sign In
+              </button>
+            </Link>
           )}
         </div>
       </div>
 
       {/* Mobile Navigation Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-white text-black hover:text-black py-4">
+        <div className="md:hidden bg-white text-black py-4">
           <Link href="/">
             <button className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4">
               Home
             </button>
           </Link>
           <Link href="/product">
-            <button className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white  font-bold py-2 px-4">
+            <button className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4">
               Products
             </button>
           </Link>
-          <Link href="/textbook-exchange">
+          <Link href="/dashboard">
             <button className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4">
-              Textbook Exchange
+              Dashboard
             </button>
           </Link>
           <Link href="/cart">
@@ -173,20 +168,19 @@ const Navigation = () => {
             </button>
           </Link>
           <NotificationPopup />
-          {session /* && isLogggedIn */? (
+          {isAuthenticated ? (
             <button
               className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4"
-              onClick={() => signOut()}
+              onClick={logout}
             >
               Logout
             </button>
           ) : (
-            <button
-              className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4"
-              onClick={() => signIn()}
-            >
-              Sign In
-            </button>
+            <Link href="/auth/signin">
+              <button className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4">
+                Sign In
+              </button>
+            </Link>
           )}
         </div>
       )}
@@ -197,4 +191,5 @@ const Navigation = () => {
 export default Navigation;
 
 
-// fix the notification dusplay on mobile devices to stop being and icon and just be a word notifications
+
+// fix the notification display on mobile devices to stop being and icon and just be a word notifications

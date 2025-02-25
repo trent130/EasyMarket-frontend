@@ -40,14 +40,24 @@ export interface ApiError {
   status: number;
 }
 
-export interface AuthTokens {
-  access: string;
-  refresh: string;
-}
-
 export interface LoginCredentials {
   username: string;
   password: string;
+}
+
+export interface AuthContextType {
+  isAuthenticated: boolean;
+  user: any | null;
+  loading: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  logout: () => void;
+}
+
+export interface AuthTokens {
+  refreshToken: string;
+  token: string;
+  user_id: number;
+  email: string;
 }
 
 export interface Order {
@@ -80,6 +90,34 @@ export interface ApiResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
+}
+
+export interface TwoFactorAuthResponse {
+  secret: string;
+  qrCodeUrl: string;
+}
+
+export interface TwoFactorStatusResponse {
+  isEnabled: boolean;
+  isVerified: boolean;
+}
+
+export interface SignInResponse {
+  message: string;
+  token: string;
+}
+
+export interface SignUpResponse {
+  message: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface TwoFactorVerifyResponse {
+  success: boolean;
+  message?: string;
 }
 
 export interface SingleResponse<T> {

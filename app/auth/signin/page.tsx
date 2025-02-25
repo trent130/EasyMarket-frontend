@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
 import useVisibility from "@/components/useVisibility";
-import Component from "@/components/showAndHidePassword";
-import { apiService } from "@/services/api/api"; // Import the apiService
+import PasswordInput from "@/components/showAndHidePassword";
+import { apiService } from "@/services/api/api";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -35,26 +35,42 @@ export default function SignInPage() {
   });
 
   const onSubmit = async (data: LoginForm) => {
+    console.log("Submitting form with data:", data);
+    setError(null);
+
     try {
-      // Attempt sign-in using apiService
       const result = await apiService.login({
         username: data.username,
         password: data.password,
       });
 
-      if (result) {
-        // Store the auth token (if needed)
-        localStorage.setItem("token", result.token);
+      console.log("API Response:", result);
 
-        // Redirect to the home page or desired location
+      if (result && result.access) {
+        // Store tokens correctly
+        localStorage.setItem("token", result.access);
+        localStorage.setItem("refreshToken", result.refresh);
+
+        // Store user info if needed
+        if (result.user_id) {
+          localStorage.setItem("userId", result.user_id.toString());
+        }
+        if (result.email) {
+          localStorage.setItem("userEmail", result.email);
+        }
+
+        // Redirect to homepage
         router.push("/");
       } else {
-        setError("Invalid credentials");
+        console.error("API returned unexpected structure:", result);
+        setError("Invalid credentials or unexpected API response format.");
       }
     } catch (error: any) {
-      setError(error.message || "An error occurred during sign in");
+      console.error("Login error:", error);
+      setError(error.message || "An error occurred during sign-in");
     }
   };
+
 
   return (
     <div className="space-y-6 w-full max-w-md rounded-xl bg-white p-10 shadow-md">
@@ -71,7 +87,7 @@ export default function SignInPage() {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Input
             {...register("username")}
@@ -82,19 +98,22 @@ export default function SignInPage() {
           {errors.username && (
             <p className="text-red-500 text-sm">{errors.username.message}</p>
           )}
+
+          <PasswordInput
+            register={register("password")}
+            error={errors.password?.message}
+          />
         </div>
 
-        <Component />
+
 
         {/* Submit Button */}
-        <div>
-          <button
-            type="submit"
-            className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            Sign In
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        >
+          Sign In
+        </button>
       </form>
 
       <div className="text-center text-sm">

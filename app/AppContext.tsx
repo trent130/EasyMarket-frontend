@@ -2,24 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { WebSocketService, WebSocketMessageType } from '../lib/websocket';
-import { 
- /*  fetchProducts,  */
-  // fetchWishlists,
-  // addProductToWishlist as apiAddToWishlist,
-  // removeProductFromWishlist as apiRemoveFromWishlist,
-  createOrder as apiCreateOrder,
-  /* addProductToWishlist,
-  removeProductFromWishlist */
-} from '../app/services/api';
 import { Wishlist, Product } from './types/api';
-import {  marketplaceApi } from './services/api/marketplace';
+import { marketplaceApi } from './services/api/marketplace';
 
 
-// interface Product {
-//   id: number;
-//   name: string;
-//   price: number;
-// }
+import { useAuth } from '@/contexts/AuthContext';
+
+
+
 
 
 interface CartItem extends Product {
@@ -64,6 +54,7 @@ export function useAppContext() {
  * available throughout the application.
  */
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, user } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   // const [wishlistId, setWishlistId] = useState<number | null>(null);
@@ -77,7 +68,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     ws.subscribe<{ products: Product[] }>(WebSocketMessageType.PRODUCT_UPDATE, (data) => {
       const updatedProducts = data.products;
-      setCart(prevCart => 
+      setCart(prevCart =>
         prevCart.map(item => {
           const updatedProduct = updatedProducts.find(p => p.id === item.id);
           return updatedProduct ? { ...updatedProduct, quantity: item.quantity } : item;
@@ -102,22 +93,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     initializeWishlist();
   }, []);
 
-  /**
-   * Adds a product to the cart or increments its quantity if it already exists
-   * @param {Product} product The product to add
-   */
- // Cart functions (to be synced with API)
- const addToCart = (product: Product) => {
-  setCart(prevCart => {
-    const existingItem = prevCart.find(item => item.id === product.id);
-    if (existingItem) {
-      return prevCart.map(item =>
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-      );
-    }
-    return [...prevCart, { ...product, quantity: 1 }];
-  });
-};
+  const addToCart = (product: Product) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.id === product.id);
+      if (existingItem) {
+        return prevCart.map(item =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
+  };
 
   /**
    * Removes a product from the cart by its ID
@@ -160,7 +146,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  
+
 
   const value = {
     cart,
@@ -170,6 +156,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addToWishlist,
     removeFromWishlist,
     checkout,
+    isAuthenticated, // Make auth state available
+    user,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

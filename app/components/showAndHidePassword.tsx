@@ -1,39 +1,30 @@
+// In showAndHidePassword.tsx
 "use client";
-
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useId, useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { UseFormRegisterReturn } from "react-hook-form";
 
-export default function Component() {
+interface PasswordInputProps {
+  register: UseFormRegisterReturn;
+  error?: string;
+  id?: string;
+}
+
+export default function PasswordInput({ register, error, id: propId }: PasswordInputProps) {
   const id = useId();
+  const inputId = propId || `password-${id}`;
   const [isVisible, setIsVisible] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const loginSchema = z.object({
-    username: z.string().min(3, "Username must be at least 3 characters"), ////.email('Invalid username address'),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-  });
-  type LoginForm = z.infer<typeof loginSchema>;
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-  });
-
+  
   const toggleVisibility = () => setIsVisible((prevState) => !prevState);
-
+  
   return (
     <div className="space-y-2">
       <div className="relative">
         <Input
-          {...register("password")}
-          id="password"
-          className="pe-9"
+          {...register}
+          id={inputId}
+          className={`pe-9 ${error ? "border-red-500" : ""}`}
           placeholder="Password"
           type={isVisible ? "text" : "password"}
         />
@@ -43,7 +34,7 @@ export default function Component() {
           onClick={toggleVisibility}
           aria-label={isVisible ? "Hide password" : "Show password"}
           aria-pressed={isVisible}
-          aria-controls="password"
+          aria-controls={inputId}
         >
           {isVisible ? (
             <EyeOff size={16} strokeWidth={2} aria-hidden="true" />
@@ -52,6 +43,9 @@ export default function Component() {
           )}
         </button>
       </div>
+      {error && (
+        <p className="text-red-500 text-sm">{error}</p>
+      )}
     </div>
   );
 }
