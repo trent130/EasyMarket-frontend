@@ -1,72 +1,113 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AuthTokens } from '@/types/api';
 import { apiService } from '@/services/api/api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: any | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  user: any | null;
+  login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const router = useRouter();
+  const [user, setUser] = useState<any | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
+  // First effect - handle hydration
   useEffect(() => {
-    const checkAuth = async () => {
+    setIsHydrated(true);
+  }, []);
+
+  // Initialize auth state from storage
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const initializeAuth = async () => {
+      setLoading(true);
       const token = localStorage.getItem('token');
-
-      if (!token) {
-        setIsAuthenticated(false);
-        setUser(null);
-        setLoading(false);
-        return;
+      
+      if (token) {
+        try {
+          const userProfile = await apiService.user.getProfile();
+          setUser(userProfile);
+          setIsAuthenticated(true);
+        } catch (error) {
+          clearAuthData();
+        }
       }
+      
+      setLoading(false);
+    };
 
+    initializeAuth();
+  }, [isHydrated]); // Add isHydrated as dependency
+
+  const saveAuthData = (data: AuthTokens) => {
+    if (data.token || data.access) {
+      localStorage.setItem('token', data.token || data.access || '');
+    }
+    if (data.refreshToken || data.refresh) {
+      localStorage.setItem('refreshToken', data.refreshToken || data.refresh || '');
+    }
+    if (data.user_id) {
+      localStorage.setItem('user_id', String(data.user_id));
+    }
+    if (data.email) {
+      localStorage.setItem('email', data.email);
+    }
+  };
+
+  const clearAuthData = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('email');
+    setIsAuthenticated(false);
+    setUser(null);
+  };
+
+  const login = async (identifier: string, password: string) => {
+    setLoading(true);
+    try {
+      // Determine if identifier is email or username
+      const credentials = {
+        email: identifier.includes('@') ? identifier : undefined,
+        username: !identifier.includes('@') ? identifier : undefined,
+        password
+      };
+
+      const authData = await apiService.login(credentials);
+      
+      // Save auth data
+      // localStorage.setItem('token', authData.token || authData.access);
+      // if (authData.refreshToken || authData.refresh) {
+      //   localStorage.setItem('refreshToken', authData.refreshToken || authData.refresh);
+      // }
+
+      // Set initial user data
+      const initialUser = { id: authData.user_id, email: authData.email };
+      setUser(initialUser);
+      localStorage.setItem('user', JSON.stringify(initialUser));
+      setIsAuthenticated(true);
+
+      // Try to get full profile
       try {
         const profile = await apiService.user.getProfile();
         setUser(profile);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Auth validation error:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        setIsAuthenticated(false);
-        setUser(null);
-      } finally {
-        setLoading(false);
+        localStorage.setItem('user', JSON.stringify(profile));
+      } catch (profileError) {
+        console.error('Failed to fetch profile:', profileError);
       }
-    };
 
-    checkAuth();
-  }, []);
-
-  const login = async (username: string, password: string) => {
-    setLoading(true);
-    try {
-      const result = await apiService.login({ username, password });
-  
-      if (result && result.token) {
-        localStorage.setItem('token', result.token);
-        localStorage.setItem('refreshToken', result.refreshToken);
-  
-        const profile = await apiService.user.getProfile();
-        setUser(profile);
-        setIsAuthenticated(true);
-  
-        // Force re-render in Navigation by refreshing the state
-        window.dispatchEvent(new Event("authChange"));
-  
-        router.push('/');
-      }
+      window.dispatchEvent(new Event("authChange"));
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -74,35 +115,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   };
-  
+
+  const refreshSession = async (): Promise<boolean> => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) return false;
+    
+    try {
+      const response = await apiService.refreshToken(refreshToken);
+      if (response && response.access) {
+        localStorage.setItem('token', response.access);
+        
+        // Validate the new token by fetching user profile
+        const userProfile = await apiService.user.getProfile();
+        setUser(userProfile);
+        setIsAuthenticated(true);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      clearAuthData();
+      return false;
+    }
+  };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    setIsAuthenticated(false);
-    setUser(null);
-    router.push('/auth/signin');
+    clearAuthData();
+    window.location.href = '/auth/signin';
   };
 
-  const value: AuthContextType = {
+  const value = {
     isAuthenticated,
-    user,
     loading,
+    user,
     login,
     logout,
+    refreshSession
   };
+
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};

@@ -1,23 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { Box, Typography } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Typography } from '@mui/material';
 import Link from 'next/link';
 import SearchBar from './search/SearchBar';
 import NotificationPopup from './NotificationPopup';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
-
-
 
 const Navigation = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Step 4: Listen for auth changes from other components
   useEffect(() => {
-    console.log("Authentication state changed:", isAuthenticated);
-  }, [isAuthenticated]); 
-
+    const handleAuthChange = () => {
+      console.log("Auth state changed event received");
+      // No need to manually update state since we're using the context directly
+    };
+    
+    window.addEventListener("authChange", handleAuthChange);
+    return () => window.removeEventListener("authChange", handleAuthChange);
+  }, []);
+  
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);
   };
@@ -127,7 +131,7 @@ const Navigation = () => {
           {isAuthenticated ? (
             <div className="flex items-center">
               <Typography variant="body1" className="mr-2">
-                Welcome, <Link href="/user/profile">{user?.name}</Link>
+                Welcome, <Link href="/user/profile">{user?.name || user?.email}</Link>
               </Typography>
               <button
                 className="bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4 rounded duration-300"
@@ -174,14 +178,23 @@ const Navigation = () => {
               Wishlist
             </button>
           </Link>
-          <NotificationPopup />
+          <div className="block w-full text-left bg-transparent font-bold py-2 px-4">
+            <NotificationPopup />
+          </div>
           {isAuthenticated ? (
-            <button
-              className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4"
-              onClick={logout}
-            >
-              Logout
-            </button>
+            <>
+              <Link href="/user/profile">
+                <button className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4">
+                  Profile
+                </button>
+              </Link>
+              <button
+                className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4"
+                onClick={logout}
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <Link href="/auth/signin">
               <button className="block w-full text-left bg-transparent hover:bg-gray-700 hover:text-white font-bold py-2 px-4">
@@ -196,7 +209,5 @@ const Navigation = () => {
 };
 
 export default Navigation;
-
-
 
 // fix the notification display on mobile devices to stop being and icon and just be a word notifications

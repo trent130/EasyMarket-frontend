@@ -15,8 +15,8 @@ import {
     CardActions,
     Snackbar,
 } from '@mui/material';
-import { cartApi } from '@/services/api/cartApi';
 import { toast } from "@/hooks/use-toast"
+import { marketplaceApi } from '@/services/api/marketplace';
 
 interface CartItem {
     id: number;
@@ -40,7 +40,7 @@ export default function CartPage() {
         setLoading(true);
         setError(null);
         try {
-            const cartData = await cartApi.getCart();
+            const cartData = await marketplaceApi.getCart();
             setCart(cartData.items);
         } catch (e: any) {
             setError(e.message || "Failed to load cart");
@@ -51,7 +51,7 @@ export default function CartPage() {
 
     const handleRemoveFromCart = async (productId: number) => {
         try {
-            await cartApi.removeItem(productId);
+            await marketplaceApi.removeFromCart(productId);
             setCart(prevCart => prevCart.filter(item => item.id !== productId));
             setSnackbarMessage('Item removed from cart');
             setOpenSnackbar(true);

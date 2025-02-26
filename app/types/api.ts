@@ -34,7 +34,8 @@ export interface Wishlist {
 
 
 export interface LoginCredentials {
-  username: string;
+  email?: string;
+  username?: string;
   password: string;
 }
 
@@ -47,8 +48,10 @@ export interface AuthContextType {
 }
 
 export interface AuthTokens {
-  refreshToken: string;
-  token: string;
+  token?: string;
+  access?: string;
+  refreshToken?: string;
+  refresh?: string;
   user_id: number;
   email: string;
 }
@@ -119,6 +122,7 @@ export interface SingleResponse<T> {
 
 export interface ApiError {
   message: string;
+  status: number;
   code?: string;
   details?: Record<string, string[]>;
 }

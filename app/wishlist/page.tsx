@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { Typography, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton } from '@mui/material';
 import { Delete, ShoppingCart } from '@mui/icons-material';
 import Layout from '../layout';
-import { productsApi } from '@/services/api/products';
+// import { productsApi } from '@/services/api/products';
 import { marketplaceApi } from '@/services/api/marketplace';
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { useRouter } from 'next/navigation';
 
 interface WishlistItem {

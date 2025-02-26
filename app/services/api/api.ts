@@ -19,11 +19,6 @@ const handleApiError = (error: { response?: { data?: { message?: string }; statu
     message: error.response?.data?.message || 'An error occurred',
     status: error.response?.status || 500
   };
-
-  if(isApiError(error)) {
-    apiError.message = error.response?.data?.message || 'An error occurred';
-    apiError.status = error.response?.status || apiError.status;
-  }
   throw apiError;
 };
 
@@ -42,21 +37,37 @@ export const apiService = {
     login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
       try {
         console.log("Attempting to login with:", credentials);
-        const response: AxiosResponse<AuthTokens> = await apiClient.post<AuthTokens>('/marketplace/signin/', credentials);
+        const response = await apiClient.post<AuthTokens>('/marketplace/signin/', credentials);
         
-        // Now access token data through response.data
-        if (response.data.token) {
-          localStorage.setItem('token', response.data.token);
-          localStorage.setItem('refreshToken', response.data.refreshToken);
+        const data = response.data; // Store response.data in a variable
+        console.log("Login response data:", data);
+        
+        if (!data?.token && !data?.access) {
+          console.log("Response structure:", data);
+          throw new Error('No token received from server');
         }
         
-        return response.data;
-      } catch (error) {
-        console.error("Login request failed:", error);
-        if (isApiError(error)) {
-          throw handleApiError(error);
+        return {
+          token: data.token || data.access,
+          refreshToken: data.refreshToken || data.refresh,
+          user_id: data.user_id,
+          email: data.email
+        };
+      } catch (error: any) {
+        console.error("Login error details:", {
+          error: error,
+          response: error.response,
+          data: error.response?.data,
+          status: error.response?.status
+        });
+
+        if (error.response) {
+          const message = error.response.data?.message || 'Server error';
+          throw new Error(message);
+        } else if (error.request) {
+          throw new Error('No response from server');
         } else {
-          throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 } });
+          throw new Error(error.message || 'An unexpected error occurred');
         }
       }
     },
@@ -172,7 +183,10 @@ export const apiService = {
 
     // User related endpoints
     user: {
-        getProfile: (): Promise<any> => apiClient.get('/marketplace/profile').then(response => response.data), // Replace 'any' with the correct type
+        getProfile: async (): Promise<any> => {
+            const response = await apiClient.get('/marketplace/user/profile/');
+            return response.data;
+        },
         updateProfile: (data: any): Promise<any> => apiClient.put('/marketplace/profile', data).then(response => response.data) // Replace 'any' with the correct type
     },
 

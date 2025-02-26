@@ -21,12 +21,6 @@ export interface Review {
   updatedAt: string;
 }
 
-export interface ApiResponse<T> {
-    results: T[];
-    count: number;
-    next: string | null;
-    previous: string | null;
-  }
 
 export interface Product {
     id: number;
@@ -60,17 +54,6 @@ export interface SingleResponse<T> {
     data: T;
   }
   
-  export interface ApiError {
-    message: string;
-    code?: string;
-    details?: Record<string, string[]>;
-  }
-  
-  export interface PaginationParams {
-    page?: number;
-    limit?: number;
-    offset?: number;
-  }
   
   export interface SearchParams {
     query?: string;
