@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 const WINDOW_SIZE = 15 * 60 * 1000; // 15 minutes
 const MAX_REQUESTS_PER_IP = 100;
 const MAX_REQUESTS_PER_USER = 5;
@@ -20,25 +22,29 @@ const userRateLimitMap = new Map<string, RateLimitEntry>();
  * @returns An object with a boolean indicating whether the request was allowed, and optionally a timestamp indicating when the lockout will expire.
  */
 export function rateLimit(key: string, isIp: boolean = false): { allowed: boolean; lockedUntil?: number } {
-  const now = Date.now();
+  const [currentTime, setCurrentTime] = useState(0);
   const map = isIp ? ipRateLimitMap : userRateLimitMap;
   const maxRequests = isIp ? MAX_REQUESTS_PER_IP : MAX_REQUESTS_PER_USER;
   
-  const entry = map.get(key) || { count: 0, firstRequest: now };
+  const entry = map.get(key) || { count: 0, firstRequest: currentTime };
 
-  if (entry.lockedUntil && now < entry.lockedUntil) {
+  useEffect(() => {
+    setCurrentTime(Date.now()); // Only updates on the client
+  }, []);
+  
+  if (entry.lockedUntil && currentTime < entry.lockedUntil) {
     return { allowed: false, lockedUntil: entry.lockedUntil };
   }
 
-  if (now - entry.firstRequest > WINDOW_SIZE) {
+  if (currentTime - entry.firstRequest > WINDOW_SIZE) {
     entry.count = 1;
-    entry.firstRequest = now;
+    entry.firstRequest = currentTime;
   } else {
     entry.count++;
   }
 
   if (entry.count > maxRequests) {
-    entry.lockedUntil = now + LOCKOUT_DURATION;
+    entry.lockedUntil = currentTime + LOCKOUT_DURATION;
     map.set(key, entry);
     return { allowed: false, lockedUntil: entry.lockedUntil };
   }

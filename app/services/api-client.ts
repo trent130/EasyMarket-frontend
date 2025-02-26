@@ -46,35 +46,30 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // If the error is due to an invalid token (401) and we haven't tried refreshing yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) {
-          // No refresh token available, force login
-          // window.location.href = '/auth/signin';
+          handleLogout();
           return Promise.reject(error);
         }
         
-        // Try to get a new token
-        const response = await apiClient.post('/marketplace/api/token/refresh/', {
+        const response = await apiClient.post('/marketplace/token/refresh/', {
           refresh: refreshToken
         });
-        
-        // Store the new token
+
         const { access } = response.data;
         localStorage.setItem('token', access);
-        
-        // Update the failed request with the new token
+
+        // Update default headers for all future requests
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
         originalRequest.headers['Authorization'] = `Bearer ${access}`;
-        
-        // Retry the original request
+
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // If refresh fails, redirect to login
-        handleLogout()
+        handleLogout();
         return Promise.reject(refreshError);
       }
     }
@@ -82,6 +77,7 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 // Utility: Handle Logout
 function handleLogout() {

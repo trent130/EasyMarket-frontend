@@ -6,10 +6,17 @@ import Link from 'next/link';
 import SearchBar from './search/SearchBar';
 import NotificationPopup from './NotificationPopup';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
+
+
 
 const Navigation = () => {
   const { isAuthenticated, user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    console.log("Authentication state changed:", isAuthenticated);
+  }, [isAuthenticated]); 
 
   const toggleMenu = () => {
     setMenuOpen(!menuOpen);

@@ -53,14 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const result = await apiService.login({ username, password });
-
+  
       if (result && result.token) {
         localStorage.setItem('token', result.token);
         localStorage.setItem('refreshToken', result.refreshToken);
-
+  
         const profile = await apiService.user.getProfile();
         setUser(profile);
         setIsAuthenticated(true);
+  
+        // Force re-render in Navigation by refreshing the state
+        window.dispatchEvent(new Event("authChange"));
+  
         router.push('/');
       }
     } catch (error) {
@@ -70,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   };
+  
 
   const logout = () => {
     localStorage.removeItem('token');

@@ -1,25 +1,7 @@
 import apiClient from '../api-client';
 import { AxiosResponse } from 'axios';
 
-export interface SecurityLog {
-    id: string;
-    userId: number;
-    action: string;
-    ipAddress: string;
-    userAgent: string;
-    location: string;
-    timestamp: string;
-    status: 'success' | 'failure';
-    details?: Record<string, unknown>; // Updated to use 'unknown' instead of 'any'
-}
 
-export interface SecuritySettings {
-    twoFactorEnabled: boolean;
-    loginNotifications: boolean;
-    trustedDevices: boolean;
-    passwordLastChanged: string;
-    securityQuestionsSet: boolean;
-}
 
 export const securityApi = {
     // Security Settings

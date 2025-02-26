@@ -81,26 +81,6 @@ export interface SingleResponse<T> {
     in_stock?: boolean;
     sort_by?: SortOption;
   }
-  
-  export interface SecurityLog {
-    id: string;
-    userId: number;
-    action: string;
-    ipAddress: string;
-    userAgent: string;
-    location: string;
-    timestamp: string;
-    status: 'success' | 'failure';
-    details?: Record<string, unknown>; // Updated to use 'unknown' instead of 'any'
-}
-
-export interface SecuritySettings {
-    twoFactorEnabled: boolean;
-    loginNotifications: boolean;
-    trustedDevices: boolean;
-    passwordLastChanged: string;
-    securityQuestionsSet: boolean;
-}
 
 export interface Student {
   id: number;
@@ -165,4 +145,21 @@ export interface CalendarEvent {
   date: Date;
   type: 'product_launch' | 'sale' | 'promotion';
   productId?: string;
+}
+
+export interface Notification {
+  id: number;
+  userId: number;
+  type: 'order' | 'payment' | 'system' | 'message';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationQueryParams {
+  page?: number;
+  pageSize?: number;
+  type?: Notification['type'];
+  read?: boolean;
 }

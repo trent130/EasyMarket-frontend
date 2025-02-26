@@ -10,19 +10,6 @@ export interface Category {
   is_active: boolean;
 }
 
-export interface ApiResponse<T> {
-  results: T[];
-  count: number;
-  next: string | null;
-  previous: string | null;
-}
-
-export interface ApiError {
-  message: string;
-  code?: string;
-  details?: Record<string, string[]>;
-}
-
 export interface PaginationParams {
   page?: number;
   limit?: number;

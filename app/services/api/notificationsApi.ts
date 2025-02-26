@@ -1,22 +1,6 @@
 import apiClient from '../api-client';
 import { AxiosResponse } from 'axios';
 
-interface Notification {
-    id: number;
-    userId: number;
-    type: 'order' | 'payment' | 'system' | 'message';
-    title: string;
-    message: string;
-    read: boolean;
-    createdAt: string;
-}
-
-interface NotificationQueryParams {
-    page?: number;
-    pageSize?: number;
-    type?: Notification['type'];
-    read?: boolean;
-}
 
 export const notificationsApi = {
     getNotifications: (params?: Record<string, string | number>): Promise<Notification[]> =>

@@ -1,88 +1,18 @@
-import apiClient from '../../lib/api-client';
-import { AxiosResponse } from "axios";
-
-export interface PaymentMethod {
-  id: number;
-  type: "mpesa" | "card" | "bank";
-  is_default: boolean;
-  details: {
-    last4?: string;
-    brand?: string;
-    phone_number?: string;
-    bank_name?: string;
-  };
-}
-
-export interface Transaction {
-  id: number;
-  order_id: number;
-  amount: number;
-  currency: string;
-  status: "pending" | "completed" | "failed";
-  payment_method: string;
-  transaction_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface InitiatePaymentInput {
-  order_id: number;
-  payment_method: "mpesa" | "card" | "bank";
-  payment_details: {
-    phone_number?: string;
-    card_token?: string;
-    bank_account?: string;
-  };
-}
-
-export interface MpesaPaymentRequest {
-  phone_number: string;
-  order_id: number;
-  amount: number;
-}
-
-export interface PaymentVerification {
-  transaction_id: string;
-}
-
-export interface PaymentResponse {
-  message: string;
-  transaction_id: string;
-  status: PaymentStatus;
-}
-
-export interface RefundRequest {
-  reason: string;
-  amount?: number;
-}
-
-export interface PaymentReceipt {
-  receipt_url: string;
-}
-
-export type PaymentStatus = "pending" | "completed" | "failed";
-
-interface StatusCacheEntry {
-    status: PaymentStatus;
-    timestamp: number;
-}
-
-export interface Payment {
-    id: number;
-    orderId: number;
-    amount: number;
-    currency: string;
-    paymentMethod: string;
-    paymentDate: string;
-    status: 'pending' | 'completed' | 'failed' | 'refunded';
-}
-
-export interface PaymentIntent {
-    id: string;
-    amount: number;
-    currency: string;
-    clientSecret: string;
-}
+import { useEffect, useState } from 'react';
+import apiClient from '@/services/api-client';
+import { 
+    InitiatePaymentInput,
+    MpesaPaymentRequest,
+    Payment, 
+    PaymentIntent, 
+    PaymentMethod, 
+    PaymentReceipt, 
+    PaymentStatus, 
+    PaymentVerification, 
+    RefundRequest, 
+    StatusCacheEntry, 
+    Transaction 
+  } from '@/types/payment';
 
 // Constants for configuration
 const POLL_MAX_ATTEMPTS = 24; // 2 minutes total with exponential backoff
@@ -309,9 +239,13 @@ export const paymentApi = {
       try {
         // Check cache first
         const cached = statusCache.get(transactionId);
-        const now = Date.now();
+        const [currentTime, setCurrentTime] = useState(0);
+        
+        useEffect(() => {
+          setCurrentTime(Date.now()); // Only updates on the client
+        }, []);
 
-        if (cached && (now - cached.timestamp) < CACHE_TTL) {
+        if (cached && (currentTime - cached.timestamp) < CACHE_TTL) {
           if (isFinalStatus(cached.status)) {
             return {
               message: `Payment ${cached.status}`,
@@ -327,7 +261,7 @@ export const paymentApi = {
         if (response.data.status) {
           statusCache.set(transactionId, {
             status: response.data.status,
-            timestamp: now
+            timestamp: currentTime
           });
         }
 
@@ -363,10 +297,15 @@ export const paymentApi = {
 
   // Clear expired cache entries (can be called periodically)
   clearExpiredCache: () => {
-    const now = Date.now();
+    const [currentTime, setCurrentTime] = useState(0)
+
+    useEffect(() => {
+      setCurrentTime(Date.now()); // Only updates on the client
+    }, []);
+    
     // Convert Map entries to array to avoid iterator issues
     Array.from(statusCache.entries()).forEach(([key, value]) => {
-      if (now - value.timestamp > CACHE_TTL) {
+      if (currentTime - value.timestamp > CACHE_TTL) {
         statusCache.delete(key);
       }
     });

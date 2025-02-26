@@ -1,8 +1,8 @@
 import apiClient from '../api-client';
-import { Product } from '../../types/product';
-import { PaginatedResponse } from '../../types/common';
-import { MarketplaceListing } from '../../types/marketplace';
-import { AxiosResponse } from 'axios';
+import { Product } from '@/types/product';
+import { PaginatedResponse } from '@/types/common';
+import { MarketplaceListing } from '@/types/marketplace';
+// import { AxiosResponse } from 'axios';
 
 interface SearchResults {
     products: PaginatedResponse<Product>;

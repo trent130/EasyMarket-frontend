@@ -39,8 +39,6 @@ const isApiError = (error: unknown): error is { response?: { data?: { message?: 
 
 export const apiService = {
     // Auth
-
-
     login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
       try {
         console.log("Attempting to login with:", credentials);
@@ -62,7 +60,6 @@ export const apiService = {
         }
       }
     },
-    
     
 
     refreshToken: async (refreshToken: string): Promise<{ access: string }> => {
@@ -175,8 +172,8 @@ export const apiService = {
 
     // User related endpoints
     user: {
-        getProfile: (): Promise<any> => apiClient.get('/user/profile').then(response => response.data), // Replace 'any' with the correct type
-        updateProfile: (data: any): Promise<any> => apiClient.put('/user/profile', data).then(response => response.data) // Replace 'any' with the correct type
+        getProfile: (): Promise<any> => apiClient.get('/marketplace/profile').then(response => response.data), // Replace 'any' with the correct type
+        updateProfile: (data: any): Promise<any> => apiClient.put('/marketplace/profile', data).then(response => response.data) // Replace 'any' with the correct type
     },
 
     // Product related endpoints

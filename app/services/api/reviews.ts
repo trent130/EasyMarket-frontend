@@ -1,4 +1,4 @@
-import apiClient from '../../lib/api-client';
+import apiClient from '@/services/api-client';
 import type { Review, User } from '../../types/common';
 import { AxiosResponse } from 'axios';
 
