@@ -35,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
+  const [initialized, setInitialized] = useState<boolean>(false);
 
   /**
    * Initialize authentication state from localStorage
@@ -48,6 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (!token) {
           setLoading(false);
+          setInitialized(true);
           return;
         }
 
@@ -70,13 +72,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAuthenticated(true);
         } catch (error) {
           console.error('Token validation failed:', error);
-          // Clear invalid auth data
-          handleLogout();
+          // Don't automatically logout on validation failure
+          // This prevents the logout loop when websockets disconnect
+          if (storedUser) {
+            // Keep the user logged in with stored data
+            console.log('Using cached authentication data');
+          } else {
+            // Only logout if we have no stored user data
+            handleLogout(false); // Don't redirect
+          }
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
       } finally {
         setLoading(false);
+        setInitialized(true);
       }
     };
 
@@ -85,20 +95,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   /**
    * Handle user logout
-   * Clears auth data and redirects to login page
+   * Optional redirect parameter to prevent automatic redirects
    */
-  const handleLogout = () => {
-    // Clear auth data from localStorage
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
+  const handleLogout = (redirect = true) => {
+    // Call API logout
+    apiService.logout().catch(err => {
+      console.error('Logout API error:', err);
+    });
     
     // Update state
     setIsAuthenticated(false);
     setUser(null);
     
-    // Use window.location for full page refresh to ensure clean state
-    window.location.href = '/auth/signin';
+    // Only redirect if explicitly requested
+    if (redirect && typeof window !== 'undefined') {
+      window.location.href = '/auth/signin';
+    }
   };
 
   /**
@@ -154,8 +166,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     user,
     login,
-    logout: handleLogout
+    logout: () => handleLogout(true)
   };
+
+  // Don't render children until auth is initialized
+  if (!initialized) {
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+    </div>;
+  }
 
   return (
     <AuthContext.Provider value={value}>
