@@ -1,7 +1,7 @@
 import apiClient from "../api-client";
 import { OrderStatus } from "@/types/orders";
 import { ApiError, Order } from "@/types/api";
-import { AxiosResponse } from "axios";
+// import { AxiosResponse } from "axios";
 
 const handleApiError = (error: { response?: { data?: { message?: string }; status?: number } }): never => {
   const apiError: ApiError = {

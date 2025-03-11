@@ -26,13 +26,13 @@ const topProducts = [
 function App() {
   return (
     <DashboardLayout>
-      <div className="flex flex-col flex-wrap sm:h-[100vh] sm:w-[100vw] bg-gray-50 overflow-auto">
+      <div className="flex flex-col flex-wrap sm:h-[100vh] sm:w-[100vw] bg-gray-50 mx-auto">
 
         {/* Main Content */}
         <div className="flex-1 mt-0">
           {/* Header */}
           <header className="bg-white shadow-sm">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="max-w-7xl  px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
                 <div className="flex items-center space-x-4">
@@ -43,7 +43,7 @@ function App() {
           </header>
 
           {/* Dashboard Content */}
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="max-w-7xl px-4 sm:px-6 lg:px-8 py-8 ">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats.map((stat) => (

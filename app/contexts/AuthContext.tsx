@@ -1,79 +1,110 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { AuthTokens } from '@/types/api';
 import { apiService } from '@/services/api/api';
+import { STORAGE_KEYS } from '@/services/api-client';
+import { User } from '@/types/api';
 
+/**
+ * Authentication Context Type Definition
+ * Defines the shape of the authentication context
+ */
 interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
-  user: any | null;
+  user: User | null;
   login: (identifier: string, password: string) => Promise<void>;
   logout: () => void;
-  refreshSession: () => Promise<boolean>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Create context with default values
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  loading: true,
+  user: null,
+  login: async () => {},
+  logout: () => {}
+});
 
+/**
+ * Authentication Provider Component
+ * Manages authentication state and provides auth-related functionality
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // State management
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<any | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
-  // First effect - handle hydration
+  /**
+   * Initialize authentication state from localStorage
+   * This runs once when the component mounts
+   */
   useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  // Initialize auth state from storage
-  useEffect(() => {
-    if (!isHydrated) return;
-
     const initializeAuth = async () => {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      if (token) {
+      try {
+        // Check for token in localStorage
+        const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+        
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        // Set initial state from localStorage
+        const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+        if (storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+            setIsAuthenticated(true);
+          } catch (e) {
+            console.error('Failed to parse stored user data:', e);
+          }
+        }
+
+        // Validate token with API
         try {
-          const userProfile = await apiService.user.getProfile();
-          setUser(userProfile);
+          const profile = await apiService.user.getProfile();
+          setUser(profile);
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(profile));
           setIsAuthenticated(true);
         } catch (error) {
-          clearAuthData();
+          console.error('Token validation failed:', error);
+          // Clear invalid auth data
+          handleLogout();
         }
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     initializeAuth();
-  }, [isHydrated]); // Add isHydrated as dependency
+  }, []);
 
-  const saveAuthData = (data: AuthTokens) => {
-    if (data.token || data.access) {
-      localStorage.setItem('token', data.token || data.access || '');
-    }
-    if (data.refreshToken || data.refresh) {
-      localStorage.setItem('refreshToken', data.refreshToken || data.refresh || '');
-    }
-    if (data.user_id) {
-      localStorage.setItem('user_id', String(data.user_id));
-    }
-    if (data.email) {
-      localStorage.setItem('email', data.email);
-    }
-  };
-
-  const clearAuthData = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('email');
+  /**
+   * Handle user logout
+   * Clears auth data and redirects to login page
+   */
+  const handleLogout = () => {
+    // Clear auth data from localStorage
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    
+    // Update state
     setIsAuthenticated(false);
     setUser(null);
+    
+    // Use window.location for full page refresh to ensure clean state
+    window.location.href = '/auth/signin';
   };
 
+  /**
+   * Handle user login
+   * Authenticates user and stores auth data
+   */
   const login = async (identifier: string, password: string) => {
     setLoading(true);
     try {
@@ -84,30 +115,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password
       };
 
+      // Authenticate with API
       const authData = await apiService.login(credentials);
       
-      // Save auth data
-      // localStorage.setItem('token', authData.token || authData.access);
-      // if (authData.refreshToken || authData.refresh) {
-      //   localStorage.setItem('refreshToken', authData.refreshToken || authData.refresh);
-      // }
-
-      // Set initial user data
-      const initialUser = { id: authData.user_id, email: authData.email };
+      // Set initial user state
+      const initialUser = { 
+        id: authData.user_id, 
+        email: authData.email 
+      };
+      
       setUser(initialUser);
-      localStorage.setItem('user', JSON.stringify(initialUser));
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(initialUser));
       setIsAuthenticated(true);
 
-      // Try to get full profile
+      // Get complete profile
       try {
         const profile = await apiService.user.getProfile();
         setUser(profile);
-        localStorage.setItem('user', JSON.stringify(profile));
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(profile));
       } catch (profileError) {
-        console.error('Failed to fetch profile:', profileError);
+        console.error('Profile fetch failed:', profileError);
+        // Continue with basic user info if profile fetch fails
       }
 
-      window.dispatchEvent(new Event("authChange"));
+      // Use window.location for full page refresh to ensure clean state
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
@@ -116,46 +148,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const refreshSession = async (): Promise<boolean> => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) return false;
-    
-    try {
-      const response = await apiService.refreshToken(refreshToken);
-      if (response && response.access) {
-        localStorage.setItem('token', response.access);
-        
-        // Validate the new token by fetching user profile
-        const userProfile = await apiService.user.getProfile();
-        setUser(userProfile);
-        setIsAuthenticated(true);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      clearAuthData();
-      return false;
-    }
-  };
-
-  const logout = () => {
-    clearAuthData();
-    window.location.href = '/auth/signin';
-  };
-
+  // Context value
   const value = {
     isAuthenticated,
     loading,
     user,
     login,
-    logout,
-    refreshSession
+    logout: handleLogout
   };
-
-  if (!isHydrated) {
-    return null;
-  }
 
   return (
     <AuthContext.Provider value={value}>
@@ -164,6 +164,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+/**
+ * Custom hook to use the auth context
+ * Ensures the hook is used within an AuthProvider
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
 // Create a separate instance for token refresh to avoid interceptor loops
 const tokenRefreshClient = axios.create({
@@ -14,25 +14,14 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // Enable sending cookies
+  withCredentials: true,
 });
 
-// Helper function to append query parameters to a URL
-function buildURLWithParams(url: string, params?: Record<string, string | number>): string {
-  const urlObj = new URL(url, apiClient.defaults.baseURL);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      urlObj.searchParams.append(key, String(value));
-    });
-  }
-  return urlObj.toString();
-}
-
-const getToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
-  }
-  return null;
+// Storage keys for consistency
+const STORAGE_KEYS = {
+  TOKEN: 'token',
+  REFRESH_TOKEN: 'refreshToken',
+  USER: 'user'
 };
 
 // Create a flag to track refresh attempts
@@ -57,94 +46,101 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Add request interceptor for debugging and token
+// Initialize auth headers from localStorage on client side
+if (typeof window !== 'undefined') {
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  if (token) {
+    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    tokenRefreshClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+}
+
+// Add request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    console.log('API Request:', {
-      url: config.url,
-      method: config.method,
-      data: config.data,
-      headers: config.headers
-    });
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Don't log sensitive information in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('API Request:', {
+        url: config.url,
+        method: config.method,
+        headers: config.headers,
+      });
     }
-    // Modify the URL to include parameters
-    if (config.url) {
-      config.url = buildURLWithParams(config.url, config.params as Record<string, string | number>);
-      delete config.params; // Remove params from config, as they are now in the URL
+    
+    // Always get the latest token
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
     }
+    
     return config;
   },
   (error) => {
-    console.error('API Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Add response interceptor for debugging
+// Add response interceptor for token refresh
 apiClient.interceptors.response.use(
   (response) => {
-    console.log('API Response:', {
-      status: response.status,
-      data: response.data
-    });
     return response;
   },
-  async (error) => {
-    console.error('API Response Error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
-
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest: any = error.config;
     
-    // Handle 401 Unauthorized errors with token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        // If a refresh is already in progress, queue this request
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject, config: originalRequest });
-        });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          handleLogout();
-          return Promise.reject(error);
-        }
-        
-        // Use the separate client to avoid interceptor loops
-        const response = await tokenRefreshClient.post('/marketplace/token/refresh/', {
-          refresh: refreshToken
-        });
-        
-        const { access } = response.data;
-        localStorage.setItem('token', access);
-        
-        // Update the token in the original request
-        originalRequest.headers['Authorization'] = `Bearer ${access}`;
-        
-        // Process any queued requests with the new token
-        processQueue(null, access);
-        isRefreshing = false;
-        
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        isRefreshing = false;
-        handleLogout();
-        return Promise.reject(refreshError);
-      }
+    // If the error is not 401 or we've already tried to refresh, reject
+    if (!error.response || error.response.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
     }
     
-    return Promise.reject(error);
+    // Mark this request as retried
+    originalRequest._retry = true;
+    
+    // If we're already refreshing, queue this request
+    if (isRefreshing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject, config: originalRequest });
+      });
+    }
+    
+    isRefreshing = true;
+    
+    try {
+      const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+      
+      const response = await tokenRefreshClient.post('/marketplace/token/refresh/', {
+        refresh: refreshToken
+      });
+      
+      const { access } = response.data;
+      
+      // Update tokens in localStorage
+      localStorage.setItem(STORAGE_KEYS.TOKEN, access);
+      
+      // Update auth headers
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+      
+      // Process queued requests
+      processQueue(null, access);
+      
+      // Return the original request with new token
+      return apiClient(originalRequest);
+    } catch (refreshError) {
+      // Handle refresh failure
+      processQueue(refreshError, null);
+      
+      // Clear auth data
+      handleLogout();
+      
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 
@@ -157,13 +153,13 @@ function handleLogout() {
   if (window.location.pathname === '/auth/signin') return;
   
   // Clear storage
-  localStorage.removeItem('token');
-  localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user_id');
-  localStorage.removeItem('email');
+  localStorage.removeItem(STORAGE_KEYS.TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.USER);
   
   // Redirect to sign-in page
   window.location.href = '/auth/signin';
 }
 
+export { STORAGE_KEYS };
 export default apiClient;

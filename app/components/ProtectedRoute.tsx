@@ -5,28 +5,25 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading, refreshSession } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    // Function to check auth state and attempt refresh if needed
+    // Function to check auth state
     const checkAuthState = async () => {
       setIsChecking(true);
       
       if (!isAuthenticated && !loading) {
-        // Try to refresh the session before redirecting
-        const refreshed = await refreshSession();
-        if (!refreshed) {
-          router.push('/auth/signin');
-        }
+        // Redirect to login if not authenticated
+        router.push('/auth/signin');
       }
       
       setIsChecking(false);
     };
 
     checkAuthState();
-  }, [isAuthenticated, loading, refreshSession, router]);
+  }, [isAuthenticated, loading, router]);
 
   if (loading || isChecking) {
     return (

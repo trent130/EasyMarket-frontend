@@ -1,87 +1,130 @@
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
-// import { enable2FAWithBackend, verify2FAWithBackend } from '../utils/twoFactorAuth';
+import { apiService } from '@/services/api/api';
+import { TwoFactorAuthResponse, TwoFactorStatusResponse, TwoFactorVerifyResponse } from '@/types/api';
 
-export function use2FA() {
-  const { data: session } = useSession();
-  const [isEnabling, setIsEnabling] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
+/**
+ * Custom hook for managing 2FA functionality
+ */
+export const use2FA = () => {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [secret, setSecret] = useState<string | null>(null);
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
 
-  const enable2FA = async () => {
-    if (!session?.user) {
-      setError('You must be logged in to enable 2FA');
-      return;
-    }
-
-    setIsEnabling(true);
+  /**
+   * Get current 2FA status
+   */
+  const getStatus = async (): Promise<TwoFactorStatusResponse> => {
+    setLoading(true);
     setError(null);
-
+    
     try {
-      const response = await fetch('/marketplace/enable-2fa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to enable 2FA');
-      }
-
-      setQrCode(data.qrCodeUrl);
-      setSecret(data.secret);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const response = await apiService.get2FAStatus();
+      setIs2FAEnabled(response.isEnabled);
+      return response;
+    } catch (err: any) {
+      setError(err.message || 'Failed to get 2FA status');
+      throw err;
     } finally {
-      setIsEnabling(false);
+      setLoading(false);
     }
   };
 
-  const verify2FA = async (token: string) => {
-    if (!session?.user || !secret) {
-      setError('Invalid state for 2FA verification');
-      return false;
-    }
-
-    setIsVerifying(true);
+  /**
+   * Enable 2FA for the current user
+   */
+  const enable2FA = async (): Promise<TwoFactorAuthResponse> => {
+    setLoading(true);
     setError(null);
-
+    
     try {
-      const response = await fetch('/api/auth/verify-2fa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, secret }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to verify 2FA');
-      }
-
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      return false;
+      const response = await apiService.enable2FA();
+      setQrCode(response.qrCodeUrl);
+      setSecret(response.secret);
+      return response;
+    } catch (err: any) {
+      setError(err.message || 'Failed to enable 2FA');
+      throw err;
     } finally {
-      setIsVerifying(false);
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Verify 2FA setup with a token
+   */
+  const verifySetup = async (token: string): Promise<TwoFactorVerifyResponse> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.verify2FASetup(token);
+      if (response.success) {
+        setIs2FAEnabled(true);
+      }
+      return response;
+    } catch (err: any) {
+      setError(err.message || 'Failed to verify 2FA setup');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Disable 2FA for the current user
+   */
+  const disable2FA = async (token: string): Promise<TwoFactorVerifyResponse> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.disable2FA(token);
+      if (response.success) {
+        setIs2FAEnabled(false);
+        setQrCode(null);
+        setSecret(null);
+      }
+      return response;
+    } catch (err: any) {
+      setError(err.message || 'Failed to disable 2FA');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Validate a 2FA token during login
+   */
+  const validateToken = async (token: string): Promise<TwoFactorVerifyResponse> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await apiService.validate2FAToken(token);
+      return response;
+    } catch (err: any) {
+      setError(err.message || 'Invalid 2FA token');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
   return {
-    enable2FA,
-    verify2FA,
-    isEnabling,
-    isVerifying,
+    loading,
     error,
     qrCode,
     secret,
+    is2FAEnabled,
+    getStatus,
+    enable2FA,
+    verifySetup,
+    disable2FA,
+    validateToken
   };
-}
+};
+
+export default use2FA;

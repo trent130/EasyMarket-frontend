@@ -32,19 +32,19 @@ export interface Wishlist {
   items: WishlistItem[];
 }
 
+export interface User {
+  id: number;
+  email: string;
+  username?: string;
+  name?: string;
+  profile_image?: string;
+  is_2fa_enabled?: boolean;
+}
 
 export interface LoginCredentials {
   email?: string;
   username?: string;
   password: string;
-}
-
-export interface AuthContextType {
-  isAuthenticated: boolean;
-  user: any | null;
-  loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
 }
 
 export interface AuthTokens {
@@ -54,6 +54,17 @@ export interface AuthTokens {
   refresh?: string;
   user_id: number;
   email: string;
+  requires2FA?: boolean;
+}
+
+export interface AuthContextType {
+  isAuthenticated: boolean;
+  loading: boolean;
+  user: User | null;
+  login: (identifier: string, password: string) => Promise<void>;
+  logout: () => void;
+  requires2FA: boolean;
+  verify2FA: (token: string) => Promise<void>;
 }
 
 export interface Order {
@@ -82,15 +93,15 @@ export interface Category {
 }
 
 export interface ApiResponse<T> {
-  results: T[];
-  count: number;
-  next: string | null;
-  previous: string | null;
+  data: T;
+  message?: string;
+  status: number;
 }
 
 export interface TwoFactorAuthResponse {
   secret: string;
   qrCodeUrl: string;
+  message?: string;
 }
 
 export interface TwoFactorStatusResponse {
@@ -114,6 +125,7 @@ export interface ForgotPasswordResponse {
 export interface TwoFactorVerifyResponse {
   success: boolean;
   message?: string;
+  token?: string;
 }
 
 export interface SingleResponse<T> {
@@ -127,3 +139,8 @@ export interface ApiError {
   details?: Record<string, string[]>;
 }
 
+export interface ApiErrorResponseData {
+  message?: string,
+  code?: string,
+  details?: any
+}

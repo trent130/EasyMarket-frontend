@@ -1,158 +1,171 @@
-import apiClient from '../api-client';
-import { AxiosResponse } from "axios";
+import apiClient, { STORAGE_KEYS } from '../api-client';
+import axios, { AxiosResponse, AxiosError } from "axios";
 import { 
     LoginCredentials, 
     ApiError,
     TwoFactorAuthResponse,
     TwoFactorStatusResponse,
 	TwoFactorVerifyResponse,
-	ForgotPasswordResponse,
-	SignUpResponse,
-	SignInResponse,
+	// ForgotPasswordResponse,
+	// SignUpResponse,
+	// SignInResponse,
     AuthTokens,
+    User,
     Order
 } from '../../types/api';
 
-// Error handler
-const handleApiError = (error: { response?: { data?: { message?: string }; status?: number } }): never => {
-  const apiError: ApiError = {
-    message: error.response?.data?.message || 'An error occurred',
-    status: error.response?.status || 500
-  };
-  throw apiError;
+/**
+ * Formats API errors consistently
+ */
+const handleApiError = (error: unknown): never => {
+  if (isApiError(error)) {
+    const apiError: ApiError = {
+      message: error.response?.data?.message || 'An error occurred',
+      status: error.response?.status || 500,
+      code: error.response?.data?.code,
+      details: error.response?.data?.details
+    };
+    throw apiError;
+  }
+  
+  // For non-API errors
+  throw {
+    message: error instanceof Error ? error.message : 'An unexpected error occurred',
+    status: 500
+  } as ApiError;
 };
 
 /**
- * Checks if an error is an ApiError.
- *
- * @param error - The error to check.
- * @returns True if the error is an ApiError, false otherwise.
+ * Type guard for API errors
  */
-const isApiError = (error: unknown): error is { response?: { data?: { message?: string }; status?: number } } => {
-  return typeof error === 'object' && error !== null && 'response' in error;
+const isApiError = (error: unknown): error is AxiosError => {
+  return axios.isAxiosError(error);
 };
 
+/**
+ * API Service - Centralized API interaction layer
+ */
 export const apiService = {
-    // Auth
+    // Auth endpoints
     login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
       try {
-        console.log("Attempting to login with:", credentials);
         const response = await apiClient.post<AuthTokens>('/marketplace/signin/', credentials);
+        const data = response.data;
         
-        const data = response.data; // Store response.data in a variable
-        console.log("Login response data:", data);
-        
+        // Validate response
         if (!data?.token && !data?.access) {
-          console.log("Response structure:", data);
-          throw new Error('No token received from server');
+          throw new Error('Invalid authentication response from server');
         }
         
-        return {
-          token: data.token || data.access,
-          refreshToken: data.refreshToken || data.refresh,
-          user_id: data.user_id,
-          email: data.email
-        };
-      } catch (error: any) {
-        console.error("Login error details:", {
-          error: error,
-          response: error.response,
-          data: error.response?.data,
-          status: error.response?.status
-        });
-
-        if (error.response) {
-          const message = error.response.data?.message || 'Server error';
-          throw new Error(message);
-        } else if (error.request) {
-          throw new Error('No response from server');
-        } else {
-          throw new Error(error.message || 'An unexpected error occurred');
+        // Store tokens securely
+        const token = data.token || data.access;
+        const refreshToken = data.refreshToken || data.refresh;
+        
+        if (token) {
+          localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         }
+        
+        if (refreshToken) {
+          localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+        }
+        
+        return data;
+      } catch (error) {
+        return handleApiError(error);
       }
     },
-    
 
-    refreshToken: async (refreshToken: string): Promise<{ access: string }> => {
-        try {
-            const response = await apiClient.post<{ access: string }>('/token/refresh/', { refresh: refreshToken });
-            return response.data; 
-        } catch (error) {
-            if (isApiError(error)) {
-                throw handleApiError(error);
-            } else {
-                throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 }});
+    logout: async (): Promise<void> => {
+      try {
+        // Call logout endpoint if available
+        await apiClient.post('/marketplace/signout/');
+      } catch (error) {
+        console.error('Logout API error:', error);
+        // Continue with local logout even if API call fails
+      } finally {
+        // Clear local storage
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
+        
+        // Clear auth header
+        delete apiClient.defaults.headers.common['Authorization'];
+      }
+    },
+
+    // User endpoints
+    user: {
+        getProfile: async (): Promise<User> => {
+            try {
+                const response = await apiClient.get<User>('/marketplace/user/profile/');
+                return response.data;
+            } catch (error) {
+                return handleApiError(error);
+            }
+        },
+        updateProfile: async (data: Partial<User>): Promise<User> => {
+            try {
+                const response = await apiClient.put<User>('/marketplace/profile/', data);
+                return response.data;
+            } catch (error) {
+                return handleApiError(error);
             }
         }
     },
 
-  enable2FA: async (): Promise<TwoFactorAuthResponse> => {
-    const response = await apiClient.post<TwoFactorAuthResponse>(
-      '/marketplace/enable-2fa/',
-      {}
-    );
-    return response.data;
-  },
-
-  verify2FA: async (token: string, secret: string): Promise<TwoFactorVerifyResponse> => {
-    const response = await apiClient.post<TwoFactorVerifyResponse>(
-      '/marketplace/verify-2fa/',
-      { token, secret }
-    );
-    return response.data;
-  },
-
-  get2FAStatus: async (): Promise<TwoFactorStatusResponse> => {
-    const response = await apiClient.get<TwoFactorStatusResponse>(
-      '/marketplace/2fa-status/'
-    );
-    return response.data;
-  },
-
-  disable2FA: async (): Promise<TwoFactorVerifyResponse> => {
-    const response = await apiClient.post<TwoFactorVerifyResponse>(
-      '/marketplace/disable-2fa/',
-      {}
-    );
-    return response.data;
-  },
-
-  validate2FAToken: async (token: string): Promise<TwoFactorVerifyResponse> => {
-    const response = await apiClient.post<TwoFactorVerifyResponse>(
-      '/marketplace/validate-2fa/',
-      { token }
-    );
-    return response.data;
-  },
-/**
- * Registers a new user with the provided username, email, and password.
- *
- * @param username - The username for the new account.
- * @param email - The email address associated with the new account.
- * @param password - The password for the new account.
- * @returns A Promise that resolves to a SignUpResponse containing a message.
- */
-   signUp: async (username: string, email: string, password: string): Promise<SignUpResponse> => {
-    const response = await apiClient.post<SignUpResponse>('/marketplace/signup/', {
-        username,
-        email,
-        password,
-    });
-    return response.data;
-  },
-
-   /**
-   * Sends an email with a link to reset the user's password.
-   *
-   * @param email - The email address associated with the account to reset the password for.
-   * @returns A Promise that resolves to a ForgotPasswordResponse containing a message.
-   */
-  forgotPassword: async (email: string): Promise<ForgotPasswordResponse> => {
-    const response = await apiClient.post<ForgotPasswordResponse>('/marketplace/forgot-password/', {
-        email,
-    });
-    return response.data;
-  },
+    // 2FA endpoints
+    enable2FA: async (): Promise<TwoFactorAuthResponse> => {
+        try {
+            const response = await apiClient.post<TwoFactorAuthResponse>('/marketplace/2fa/enable/');
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+    
+    verify2FASetup: async (token: string): Promise<TwoFactorVerifyResponse> => {
+        try {
+            const response = await apiClient.post<TwoFactorVerifyResponse>('/marketplace/2fa/verify-setup/', { token });
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+    
+    disable2FA: async (token: string): Promise<TwoFactorVerifyResponse> => {
+        try {
+            const response = await apiClient.post<TwoFactorVerifyResponse>('/marketplace/2fa/disable/', { token });
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+    
+    validate2FAToken: async (token: string): Promise<TwoFactorVerifyResponse> => {
+        try {
+            const response = await apiClient.post<TwoFactorVerifyResponse>('/marketplace/2fa/validate/', { token });
+            
+            // If validation successful, update token
+            if (response.data.success && response.data.token) {
+                localStorage.setItem(STORAGE_KEYS.TOKEN, response.data.token);
+                apiClient.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+            }
+            
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
+    
+    get2FAStatus: async (): Promise<TwoFactorStatusResponse> => {
+        try {
+            const response = await apiClient.get<TwoFactorStatusResponse>('/marketplace/2fa/status/');
+            return response.data;
+        } catch (error) {
+            return handleApiError(error);
+        }
+    },
 
     // Orders
     createOrder: async (orderData: Partial<Order>): Promise<Order> => {
@@ -179,15 +192,6 @@ export const apiService = {
                 throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 }});
             }
         }
-    },
-
-    // User related endpoints
-    user: {
-        getProfile: async (): Promise<any> => {
-            const response = await apiClient.get('/marketplace/user/profile/');
-            return response.data;
-        },
-        updateProfile: (data: any): Promise<any> => apiClient.put('/marketplace/profile', data).then(response => response.data) // Replace 'any' with the correct type
     },
 
     // Product related endpoints

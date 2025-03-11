@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import type { Message } from "@/types/message";
 import DashboardLayout from "@/components/DashboardLayout";
-import { /* fetchMessages, */ sendMessage } from "./actions"; // Import server actions
+//import { /* fetchMessages, */ sendMessage } from "./actions"; // Import server actions
 import { useRouter } from "next/navigation";
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 interface Message {
     id: string;

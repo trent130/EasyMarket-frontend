@@ -1,28 +1,6 @@
+import { SearchParams, SearchResults } from '@/types/common';
 import apiClient from '../api-client';
-import { Product } from '@/types/product';
-import { PaginatedResponse } from '@/types/common';
-import { MarketplaceListing } from '@/types/marketplace';
-// import { AxiosResponse } from 'axios';
 
-interface SearchResults {
-    products: PaginatedResponse<Product>;
-    listings: PaginatedResponse<MarketplaceListing>;
-    categories: string[];
-    suggestions: string[];
-}
-
-interface SearchParams {
-    query: string;
-    filters?: {
-        category?: string[];
-        priceRange?: [number, number];
-        rating?: number;
-        availability?: boolean;
-    };
-    sort?: 'price_asc' | 'price_desc' | 'rating' | 'newest';
-    page?: number;
-    pageSize?: number;
-}
 
 export const searchApi = {
     search: (params: SearchParams): Promise<SearchResults> =>

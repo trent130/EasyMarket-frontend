@@ -16,8 +16,8 @@ Before you begin, ensure you have the following installed on your system:
 1. Open your terminal
 2. Run the following command:
    ```
-   git clone https://github.com/trent130/upgraded-octo-couscous.git
-   cd upgraded-octo-couscous
+   git clone https://github.com/trent130/easymarket-frontend.git
+   cd easymarket-frontend
    ```
 
 ## Step 2: Install Dependencies

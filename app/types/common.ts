@@ -1,3 +1,5 @@
+import { MarketplaceListing } from "./marketplace";
+
 export type SortOption = 'price_asc' | 'price_desc' | 'newest' | 'rating' | 'popularity';
 
 export interface User {
@@ -145,4 +147,33 @@ export interface NotificationQueryParams {
   pageSize?: number;
   type?: Notification['type'];
   read?: boolean;
+}
+
+export interface ReviewQueryParams {
+  productId?: number;
+  userId?: number;
+  minRating?: number;
+  maxRating?: number;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface SearchResults {
+  products: PaginatedResponse<Product>;
+  listings: PaginatedResponse<MarketplaceListing>;
+  categories: string[];
+  suggestions: string[];
+}
+
+export interface SearchParams {
+  query?: string;
+  filters?: {
+      category?: string[];
+      priceRange?: [number, number];
+      rating?: number;
+      availability?: boolean;
+  };
+  sort?: 'price_asc' | 'price_desc' | 'rating' | 'newest';
+  page?: number;
+  pageSize?: number;
 }

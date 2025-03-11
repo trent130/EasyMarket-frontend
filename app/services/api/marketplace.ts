@@ -2,7 +2,6 @@ import apiClient from '../api-client';
 import  { Product }  from '../../types/product';
 import { ApiError, WishlistItem } from '../../types/api';
 import { Category, Review, CartItem }  from '../../types/marketplace';
-import { AxiosResponse } from 'axios';
 
 // Error handler
 const handleApiError = (error: { response?: { data?: { message?: string }; status?: number } }): never => {

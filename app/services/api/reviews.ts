@@ -1,17 +1,6 @@
 import apiClient from '@/services/api-client';
-import type { Review, User } from '../../types/common';
+import type { Review, ReviewQueryParams, User } from '../../types/common';
 import { AxiosResponse } from 'axios';
-
-interface ReviewQueryParams {
-  productId?: number;
-  userId?: number;
-  minRating?: number;
-  maxRating?: number;
-  page?: number;
-  pageSize?: number;
-}
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/products/api';
 
 // Reviews
 export const fetchReviews = async (params?: ReviewQueryParams): Promise<Review[]> => {

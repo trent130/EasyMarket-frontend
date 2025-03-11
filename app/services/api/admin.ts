@@ -1,30 +1,16 @@
 import apiClient from "../api-client";
-import { Student } from "./students";
 import { Product } from "../../types/product";
 import { Orders } from "./orders";
-import { AdminDashboardData, UserManagementData, UserManagementFilters } from '../../types/admin';
+import { AdminDashboardData,  UserManagementFilters } from '@/types/admin';  // UserManagementData,
 import { AxiosResponse } from "axios";
+import { Student } from "@/types/common";
 
-export interface AdminStats {
-  total_users: number;
-  total_products: number;
-  total_orders: number;
-  total_revenue: number;
-  active_users: number;
-  pending_verifications: number;
-  recent_transactions: number;
-  system_health: {
-    cpu_usage: number;
-    memory_usage: number;
-    disk_usage: number;
-    response_time: number;
-  };
-}
 
 export const adminApi = {
   // Dashboard Statistics
   getDashboardData: (): Promise<AdminDashboardData> =>
-    apiClient.get<AdminDashboardData>('/api/admin/dashboard').then(response => response.data),
+    apiClient.get<AdminDashboardData>('/api/admin/dashboard').then((response: AxiosResponse<AdminDashboardData>) => response.data)
+    .then(data => data),
 
   // User Management
   getUsers: (filters?: UserManagementFilters): Promise<{

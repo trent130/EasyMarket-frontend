@@ -6,8 +6,8 @@ import Navigation from './components/Navigation'
 import { Providers } from './providers'
 import Layout from './components/Layout'
 import DashboardLayout from './components/DashboardLayout'
-import { usePathname } from 'next/navigation';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { usePathname } from 'next/dist/client/components/navigation';
 
 export default function RootLayout({
   children,
@@ -26,7 +26,7 @@ export default function RootLayout({
           <>
             <SessionProvider>
               <Providers>
-                <div className="mb-4">
+                <div className="mb-15">
                   <Navigation />
                 </div>
                 <main className="mx-auto mt-2">
