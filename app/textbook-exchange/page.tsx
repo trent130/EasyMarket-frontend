@@ -1,128 +1,274 @@
+"use client";
 
-'use client';
-
-import React, { useState } from 'react';
-import { Typography, TextField, Button, Grid, Card, CardContent, CardActions } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
+import { 
+  Search, 
+  Book, 
+  SwapHoriz, 
+  School,
+  LocalOffer,
+  BookmarkBorder,
+  Share,
+  Message,
+  FilterList,
+  Sort,
+  Add
+} from '@mui/icons-material';
 
-// Mock data for listed textbooks (in a real app, this would come from a database)
-const initialTextbooks = [
-  { id: 1, title: 'Introduction to Psychology', author: 'John Smith', condition: 'Good', price: 30, contact: 'john@example.com' },
-  { id: 2, title: 'Calculus: Early Transcendentals', author: 'James Stewart', condition: 'Like New', price: 50, contact: 'sarah@example.com' },
-];
+interface Textbook {
+  id: string;
+  title: string;
+  author: string;
+  isbn: string;
+  condition: 'New' | 'Like New' | 'Very Good' | 'Good' | 'Fair';
+  price: number;
+  exchangeOption: 'Sell' | 'Exchange' | 'Both';
+  course: string;
+  subject: string;
+  edition: string;
+  image: string;
+  owner: {
+    name: string;
+    avatar: string;
+    rating: number;
+  };
+  postedDate: Date;
+}
 
 export default function TextbookExchange() {
-  const [textbooks, setTextbooks] = useState(initialTextbooks);
-  const [newTextbook, setNewTextbook] = useState({ title: '', author: '', condition: '', price: '', contact: '' });
+  const { user } = useAuth();
+  const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [subjectFilter, setSubjectFilter] = useState('all');
+  const [conditionFilter, setConditionFilter] = useState('all');
+  const [exchangeFilter, setExchangeFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date');
 
-  const handleInputChange = (e: any) => {
-    const { name, value } = e.target;
-    setNewTextbook({ ...newTextbook, [name]: value });
-  };
-
-/**
- * Handles the submission of a new textbook listing by adding it to the list of textbooks and clearing out the form.
- * @param {React.FormEvent} e - The form event
- */
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
-    const textbookToAdd = {
-      ...newTextbook,
-      id: textbooks.length + 1,
-      price: parseFloat(newTextbook.price)
+  useEffect(() => {
+    const fetchTextbooks = async () => {
+      setLoading(true);
+      try {
+        // Mock data
+        setTimeout(() => {
+          const mockTextbooks: Textbook[] = [
+            {
+              id: 'TB001',
+              title: 'Data Structures and Algorithms',
+              author: 'Thomas H. Cormen',
+              isbn: '978-0262033848',
+              condition: 'Like New',
+              price: 45.99,
+              exchangeOption: 'Both',
+              course: 'CS201',
+              subject: 'Computer Science',
+              edition: '3rd Edition',
+              image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765',
+              owner: {
+                name: 'John Doe',
+                avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
+                rating: 4.5
+              },
+              postedDate: new Date(2024, 1, 15)
+            },
+            // Add more mock textbooks...
+          ];
+          setTextbooks(mockTextbooks);
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error('Error fetching textbooks:', error);
+        setLoading(false);
+      }
     };
-    setTextbooks([...textbooks, textbookToAdd]);
-    setNewTextbook({ title: '', author: '', condition: '', price: '', contact: '' });
+
+    fetchTextbooks();
+  }, []);
+
+  const getConditionBadgeColor = (condition: string) => {
+    const colors = {
+      'New': 'bg-green-100 text-green-800',
+      'Like New': 'bg-blue-100 text-blue-800',
+      'Very Good': 'bg-purple-100 text-purple-800',
+      'Good': 'bg-yellow-100 text-yellow-800',
+      'Fair': 'bg-orange-100 text-orange-800'
+    };
+    return colors[condition] || 'bg-gray-100 text-gray-800';
   };
 
   return (
-    <DashboardLayout>
-      <Typography variant="h4" gutterBottom>
-        Textbook Exchange
-      </Typography>
-      <Grid container spacing={4}>
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" gutterBottom>
-            List a Textbook
-          </Typography>
-          <form onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Title"
-              name="title"
-              value={newTextbook.title}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Author"
-              name="author"
-              value={newTextbook.author}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Condition"
-              name="condition"
-              value={newTextbook.condition}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Price"
-              name="price"
-              type="number"
-              value={newTextbook.price}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-            <TextField
-              fullWidth
-              label="Contact Email"
-              name="contact"
-              type="email"
-              value={newTextbook.contact}
-              onChange={handleInputChange}
-              margin="normal"
-              required
-            />
-            <Button type="submit" variant="contained" color="primary" sx={{ mt: 2 }}>
-              List Textbook
-            </Button>
-          </form>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6" gutterBottom>
-            Available Textbooks
-          </Typography>
-          <Grid container spacing={2}>
-            {textbooks.map((textbook) => (
-              <Grid item xs={12} key={textbook.id}>
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6">{textbook.title}</Typography>
-                    <Typography variant="body2">Author: {textbook.author}</Typography>
-                    <Typography variant="body2">Condition: {textbook.condition}</Typography>
-                    <Typography variant="body2">Price: ${textbook.price}</Typography>
-                  </CardContent>
-                  <CardActions>
-                    <Button size="small" href={`mailto:${textbook.contact}`}>
-                      Contact Seller
-                    </Button>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Grid>
-      </Grid>
-    </DashboardLayout>
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="container mx-auto px-4">
+          {/* Header */}
+          <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Textbook Exchange</h1>
+              <p className="text-gray-600">Find, sell, or exchange textbooks with other students</p>
+            </div>
+            <div className="mt-4 md:mt-0">
+              <button 
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+              >
+                <Add className="mr-2" fontSize="small" />
+                List a Textbook
+              </button>
+            </div>
+          </div>
+
+          {/* Filters and Search */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="relative col-span-2">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="text-gray-400" fontSize="small" />
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Search by title, author, ISBN, or course..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <select
+                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={subjectFilter}
+                onChange={(e) => setSubjectFilter(e.target.value)}
+              >
+                <option value="all">All Subjects</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Physics">Physics</option>
+                <option value="Engineering">Engineering</option>
+              </select>
+
+              <select
+                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={exchangeFilter}
+                onChange={(e) => setExchangeFilter(e.target.value)}
+              >
+                <option value="all">All Options</option>
+                <option value="Sell">For Sale</option>
+                <option value="Exchange">For Exchange</option>
+                <option value="Both">Both</option>
+              </select>
+
+              <select
+                className="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="date">Latest First</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="condition">Condition</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Textbooks Grid */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <div key={index} className="bg-white rounded-lg shadow-md p-4 animate-pulse">
+                  <div className="w-full h-48 bg-gray-200 rounded-md mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {textbooks.map((textbook) => (
+                <div key={textbook.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="relative h-48">
+                    <img
+                      src={textbook.image}
+                      alt={textbook.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2 flex space-x-2">
+                      <button className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100">
+                        <BookmarkBorder className="text-gray-600" fontSize="small" />
+                      </button>
+                      <button className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100">
+                        <Share className="text-gray-600" fontSize="small" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">{textbook.title}</h3>
+                        <p className="text-sm text-gray-600">{textbook.author}</p>
+                      </div>
+                      <span className="text-lg font-bold text-blue-600">${textbook.price}</span>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getConditionBadgeColor(textbook.condition)}`}>
+                        {textbook.condition}
+                      </span>
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                        {textbook.course}
+                      </span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+                        {textbook.edition}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <img
+                          src={textbook.owner.avatar}
+                          alt={textbook.owner.name}
+                          className="w-8 h-8 rounded-full mr-2"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{textbook.owner.name}</p>
+                          <div className="flex items-center">
+                            {[...Array(5)].map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-xs ${
+                                  i < Math.floor(textbook.owner.rating)
+                                    ? 'text-yellow-400'
+                                    : 'text-gray-300'
+                                }`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <button className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        <Message className="mr-1" fontSize="small" />
+                        Contact
+                      </button>
+                      {textbook.exchangeOption !== 'Sell' && (
+                        <button className="flex items-center px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                          <SwapHoriz className="mr-1" fontSize="small" />
+                          Exchange
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

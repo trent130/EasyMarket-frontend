@@ -28,9 +28,9 @@ import {
 } from '../../../lib/utils';
 // import { fetchProductBySlug } from '../../../lib/api-client';
 import type { Product } from '../../types/product';
-import { productsApi }  from '../../services/api/productApi';
 import { isValidSlug } from '../../utils/validation';
 import { handleApiError, logError } from '../../utils/errorHandling';
+import { productService } from '@/services/api/products';
 
 const ProductStatCard: React.FC<{
   title: string;
@@ -134,8 +134,8 @@ const loadProduct = async () => {
     }
 
     // Fetch product details
-    console.log('productsApi:', productsApi);
-    const data = await productsApi.getProductDetails(slug);
+    console.log('productsApi:', productService);
+    const data = await productService.getProductDetails(slug);
     
     // Validate fetched data
     if (!data) {

@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { debounce } from 'lodash';
 import { productService } from '@/services/api/products';
 import type { ProductBase, ProductSearchFilters, Category } from '../../types/product';
 import ProductCard from './ProductCard';
 import ProductFilter from './ProductFilter';
-import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { useRouter, useSearchParams } from 'next/dist/client/components/navigation';
 
 const ITEMS_PER_PAGE = 12;
 

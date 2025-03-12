@@ -153,3 +153,10 @@ export interface PaymentIntent {
     currency: string;
     clientSecret: string;
 }
+
+export interface PaymentFormProps {
+  orderId: number;
+  amount: number;
+  onSuccess: (transactionId: string) => void;
+  onError: (error: string) => void;
+}

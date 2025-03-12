@@ -6,11 +6,12 @@ import { Typography, Grid, Card, CardContent, CardMedia, Button, Box } from '@mu
 import { ShoppingCart, Favorite } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import Link from 'next/link';
-import { searchApi } from "@/services/api/searchApi";
-import { productsApi } from "@/services/api/profileApi";
-import { toast } from "@/hooks/use-toast"
+// import { searchApi } from "@/services/api/searchApi";
+// import { productsApi } from "@/services/api/profileApi";
+import { useToast } from "@/hooks/use-toast"
 import { useRouter } from 'next/navigation';
 import { Product } from "@/types/common"
+import { productService } from '@/services/api/products';
 
 
 export default function SearchPage() {
@@ -31,12 +32,12 @@ export default function SearchPage() {
                 return;
             }
 
-            setIsLoading(true);
+            setLoading(true);
             setError(null);
 
             try {
                 // Use the searchApi to get the results
-                const searchResults = await productsApi.getProducts(); //getProducts();
+                const searchResults = await productService.getProducts(); //getProducts();
                 if ("error" in searchResults) {
                   setError(searchResults.error)
                   setProducts([])
@@ -46,7 +47,7 @@ export default function SearchPage() {
             } catch (e: any) {
                 setError(e.message || "Failed to fetch search results");
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
 

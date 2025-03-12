@@ -1,158 +1,272 @@
-import React from 'react';
-import { BarChart3, DollarSign, ShoppingCart, Users, TrendingUp, Package, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+"use client";
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
+import {
+  CalendarToday,
+  TrendingUp,
+  FilterList,
+  Download
+} from '@mui/icons-material';
 import DashboardLayout from '@/components/DashboardLayout';
 
-const stats = [
-  { title: 'Total Revenue', value: 'ksh84,254.00', change: '+12.5%', isPositive: true, icon: DollarSign },
-  { title: 'Total Orders', value: '1,432', change: '+8.2%', isPositive: true, icon: ShoppingCart },
-  { title: 'Active Customers', value: '3,842', change: '+5.4%', isPositive: true, icon: Users },
-  { title: 'Conversion Rate', value: '2.4%', change: '-0.8%', isPositive: false, icon: TrendingUp },
-];
+export default function Analytics() {
+  const { user } = useAuth();
+  const [timeframe, setTimeframe] = useState('month');
+  const [loading, setLoading] = useState(true);
+  const [salesData, setSalesData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [customerData, setCustomerData] = useState([]);
 
-const recentOrders = [
-  { id: '#ORD-1234', product: 'Wireless Headphones', amount: 'ksh129.99', status: 'Completed' },
-  { id: '#ORD-1235', product: 'Smart Watch', amount: 'ksh299.99', status: 'Processing' },
-  { id: '#ORD-1236', product: 'Laptop Stand', amount: 'ksh49.99', status: 'Completed' },
-  { id: '#ORD-1237', product: 'USB-C Hub', amount: 'ksh79.99', status: 'Pending' },
-];
+  useEffect(() => {
+    // Simulate fetching analytics data
+    const fetchAnalyticsData = async () => {
+      setLoading(true);
+      try {
+        // In a real app, this would be API calls with the timeframe parameter
+        setTimeout(() => {
+          // Sample sales data
+          const sales = [
+            { name: 'Jan', sales: 4000, orders: 240, profit: 2400 },
+            { name: 'Feb', sales: 3000, orders: 198, profit: 1800 },
+            { name: 'Mar', sales: 5000, orders: 300, profit: 3100 },
+            { name: 'Apr', sales: 2780, orders: 190, profit: 1500 },
+            { name: 'May', sales: 1890, orders: 130, profit: 1000 },
+            { name: 'Jun', sales: 2390, orders: 150, profit: 1300 },
+            { name: 'Jul', sales: 3490, orders: 210, profit: 2100 },
+            { name: 'Aug', sales: 4000, orders: 240, profit: 2400 },
+            { name: 'Sep', sales: 3000, orders: 180, profit: 1800 },
+            { name: 'Oct', sales: 2000, orders: 120, profit: 1200 },
+            { name: 'Nov', sales: 2780, orders: 170, profit: 1500 },
+            { name: 'Dec', sales: 3890, orders: 230, profit: 2300 }
+          ];
 
-const topProducts = [
-  { name: 'Wireless Earbuds Pro', sales: 324, revenue: 'ksh45,360' },
-  { name: 'Smart Watch Elite', sales: 256, revenue: 'ksh76,800' },
-  { name: 'Ultra HD Monitor', sales: 186, revenue: 'ksh55,800' },
-  { name: 'Ergonomic Keyboard', sales: 145, revenue: 'ksh14,500' },
-];
+          // Sample category data
+          const categories = [
+            { name: 'Electronics', value: 35 },
+            { name: 'Clothing', value: 25 },
+            { name: 'Home & Kitchen', value: 15 },
+            { name: 'Books', value: 10 },
+            { name: 'Sports', value: 8 },
+            { name: 'Other', value: 7 }
+          ];
 
-function App() {
+          // Sample customer data
+          const customers = [
+            { name: 'New', value: 65 },
+            { name: 'Returning', value: 35 }
+          ];
+
+          setSalesData(sales);
+          setCategoryData(categories);
+          setCustomerData(customers);
+          setLoading(false);
+        }, 1000);
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchAnalyticsData();
+  }, [timeframe]);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
   return (
-    <DashboardLayout>
-      <div className="flex flex-col flex-wrap sm:h-[100vh] sm:w-[100vw] bg-gray-50 mx-auto">
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="container mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Analytics</h1>
+              <p className="text-gray-600">Detailed insights into your business performance</p>
+            </div>
 
-        {/* Main Content */}
-        <div className="flex-1 mt-0">
-          {/* Header */}
-          <header className="bg-white shadow-sm">
-            <div className="max-w-7xl  px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</span>
-                </div>
+            <div className="flex items-center space-x-2">
+              <div className="bg-white rounded-md shadow-sm">
+                <button
+                  className={`px-4 py-2 text-sm font-medium rounded-l-md ${timeframe === 'week' ? 'bg-blue-100 text-blue-700' : 'text-gray-700'}`}
+                  onClick={() => setTimeframe('week')}
+                >
+                  Week
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm font-medium ${timeframe === 'month' ? 'bg-blue-100 text-blue-700' : 'text-gray-700'}`}
+                  onClick={() => setTimeframe('month')}
+                >
+                  Month
+                </button>
+                <button
+                  className={`px-4 py-2 text-sm font-medium rounded-r-md ${timeframe === 'year' ? 'bg-blue-100 text-blue-700' : 'text-gray-700'}`}
+                  onClick={() => setTimeframe('year')}
+                >
+                  Year
+                </button>
+              </div>
+
+              <button className="flex items-center px-3 py-2 bg-white rounded-md shadow-sm text-sm font-medium text-gray-700">
+                <CalendarToday fontSize="small" className="mr-1" />
+                Custom Range
+              </button>
+
+              <button className="flex items-center px-3 py-2 bg-white rounded-md shadow-sm text-sm font-medium text-gray-700">
+                <FilterList fontSize="small" className="mr-1" />
+                Filter
+              </button>
+
+              <button className="flex items-center px-3 py-2 bg-white rounded-md shadow-sm text-sm font-medium text-gray-700">
+                <Download fontSize="small" className="mr-1" />
+                Export
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 gap-6 animate-pulse">
+              <div className="bg-white rounded-lg shadow-md p-6 h-80"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-lg shadow-md p-6 h-64"></div>
+                <div className="bg-white rounded-lg shadow-md p-6 h-64"></div>
               </div>
             </div>
-          </header>
+          ) : (
+            <>
+              {/* Sales Performance Chart */}
+              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Sales Performance</h2>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={salesData}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="sales" stroke="#8884d8" activeDot={{ r: 8 }} name="Sales ($)" />
+                      <Line type="monotone" dataKey="profit" stroke="#82ca9d" name="Profit ($)" />
+                      <Line type="monotone" dataKey="orders" stroke="#ffc658" name="Orders" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-          {/* Dashboard Content */}
-          <main className="max-w-7xl px-4 sm:px-6 lg:px-8 py-8 ">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {stats.map((stat) => (
-                <div key={stat.title} className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <stat.icon className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <span className={`flex items-center text-sm ${stat.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                      {stat.change}
-                      {stat.isPositive ? (
-                        <ArrowUpRight className="w-4 h-4 ml-1" />
-                      ) : (
-                        <ArrowDownRight className="w-4 h-4 ml-1" />
-                      )}
-                    </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Product Categories */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 mb-4">Sales by Category</h2>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={categoryData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => `${value}%`} />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </div>
-                  <h3 className="text-gray-500 text-sm font-medium">{stat.title}</h3>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
                 </div>
-              ))}
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Chart Section */}
-              <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Revenue Overview</h2>
-                  <BarChart3 className="w-5 h-5 text-gray-400" />
-                </div>
-                <div className="h-64 flex items-center justify-center text-gray-400">
-                  Chart placeholder - Revenue data visualization would go here
+                {/* Customer Breakdown */}
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-lg font-semibold text-gray-800 mb-4">Customer Breakdown</h2>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={customerData}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="value" name="Customers (%)" fill="#8884d8">
+                          {customerData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
 
-              {/* Top Products */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Top Products</h2>
-                  <Package className="w-5 h-5 text-gray-400" />
-                </div>
-                <div className="space-y-4">
-                  {topProducts.map((product) => (
-                    <div key={product.name} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                        <p className="text-sm text-gray-500">{product.sales} sales</p>
-                      </div>
-                      <p className="text-sm font-semibold text-gray-900">{product.revenue}</p>
+              {/* Key Metrics */}
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">Key Performance Metrics</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="border rounded-lg p-4">
+                    <p className="text-sm text-gray-500">Average Order Value</p>
+                    <p className="text-2xl font-bold">$85.20</p>
+                    <div className="flex items-center mt-2">
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                      <span className="text-xs text-green-500 ml-1">+5.3% vs last period</span>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <p className="text-sm text-gray-500">Conversion Rate</p>
+                    <p className="text-2xl font-bold">3.2%</p>
+                    <div className="flex items-center mt-2">
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                      <span className="text-xs text-green-500 ml-1">+0.8% vs last period</span>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <p className="text-sm text-gray-500">Customer Acquisition Cost</p>
+                    <p className="text-2xl font-bold">$22.50</p>
+                    <div className="flex items-center mt-2">
+                      <TrendingUp className="h-4 w-4 text-red-500 transform rotate-180" />
+                      <span className="text-xs text-red-500 ml-1">+2.1% vs last period</span>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <p className="text-sm text-gray-500">Customer Lifetime Value</p>
+                    <p className="text-2xl font-bold">$450.80</p>
+                    <div className="flex items-center mt-2">
+                      <TrendingUp className="h-4 w-4 text-green-500" />
+                      <span className="text-xs text-green-500 ml-1">+12.3% vs last period</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Recent Orders */}
-            <div className="mt-6 bg-white rounded-lg shadow-sm">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Recent Orders</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Order ID
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Product
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {order.id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {order.product}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {order.amount}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                            ${order.status === 'Completed' ? 'bg-green-100 text-green-800' : 
-                              order.status === 'Processing' ? 'bg-blue-100 text-blue-800' : 
-                              'bg-yellow-100 text-yellow-800'}`}>
-                            {order.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </main>
+            </>
+          )}
         </div>
-      </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }
-
-export default App;

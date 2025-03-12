@@ -4,7 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export default function ProtectedRoute({ 
+  children,
+  redirectTo = '/auth/signin'
+}: { 
+  children: React.ReactNode,
+  redirectTo?: string
+}) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
@@ -16,14 +22,35 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       
       if (!isAuthenticated && !loading) {
         // Redirect to login if not authenticated
-        router.push('/auth/signin');
+        router.push(redirectTo);
       }
       
       setIsChecking(false);
     };
 
     checkAuthState();
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, loading, router, redirectTo]);
+
+  // Listen for auth changes
+  useEffect(() => {
+    const handleAuthChange = () => {
+      checkAuthState();
+    };
+    
+    window.addEventListener("authChange", handleAuthChange);
+    return () => window.removeEventListener("authChange", handleAuthChange);
+  }, []);
+
+  const checkAuthState = async () => {
+    setIsChecking(true);
+    
+    if (!isAuthenticated && !loading) {
+      // Redirect to login if not authenticated
+      router.push(redirectTo);
+    }
+    
+    setIsChecking(false);
+  };
 
   if (loading || isChecking) {
     return (

@@ -2,15 +2,9 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { paymentService } from '../../services/payment';
-import { MpesaPaymentRequest } from '../../types/payment';
+import { paymentApi } from '@/services/api/payment';
+import { MpesaPaymentRequest } from '@/types/payment';
 
-interface PaymentFormProps {
-  orderId: number;
-  amount: number;
-  onSuccess: (transactionId: string) => void;
-  onError: (error: string) => void;
-}
 
 export function PaymentForm({ orderId, amount, onSuccess, onError }: PaymentFormProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -49,16 +43,17 @@ export function PaymentForm({ orderId, amount, onSuccess, onError }: PaymentForm
 
     try {
       // Initiate payment
-      const response = await paymentService.initiateMpesaPayment({
+      const response = await paymentApi.initiateMpesaPayment({
         phone_number: data.phone_number,
-        order_id: orderId
+        order_id: orderId,
+        amount: 0
       });
 
       setIsProcessing(true);
 
       // Start polling with exponential backoff
       try {
-        const status = await paymentService.pollPaymentStatus(
+        const status = await paymentApi.pollPaymentStatus(
           response.transaction_id,
           orderId
         );

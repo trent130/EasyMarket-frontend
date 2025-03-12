@@ -3,7 +3,6 @@ import apiClient from '../api-client';
 // import { AxiosResponse } from 'axios';
 
 
-
 export const securityApi = {
     // Security Settings
     getSecuritySettings: (): Promise<SecuritySettings> =>

@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { paymentService } from '../../services/payment';
+
+import { paymentApi } from '@/services/api/payment';
 import type { PaymentReceipt } from '../../types/payment';
+import { useRouter } from 'next/dist/client/router';
+import { useSearchParams } from 'next/dist/client/components/navigation';
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
@@ -22,7 +24,7 @@ export default function PaymentSuccessPage() {
 
     const fetchReceipt = async () => {
       try {
-        const receiptData = await paymentService.getPaymentReceipt(transactionId);
+        const receiptData = await paymentApi.getPaymentReceipt(transactionId);
         setReceipt(receiptData);
       } catch (error) {
         setError('Failed to load payment receipt');

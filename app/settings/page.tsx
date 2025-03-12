@@ -1,412 +1,314 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Store,
-  Bell,
-  CreditCard,
-  Truck,
-  Mail,
-  Shield,
-  Globe,
-  Palette,
+import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import DashboardLayout from '@/components/DashboardLayout';
+import { 
+  Person, 
+  Notifications, 
+  Security, 
+  CreditCard, 
+  Language, 
+  Palette, 
+  Store, 
   Save,
-  /* Toggle, */
-  DollarSign,
-} from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
+  Check
+} from '@mui/icons-material';
 
-interface SettingsState {
-  storeName: string;
-  email: string;
-  currency: string;
-  language: string;
-  timezone: string;
-  orderPrefix: string;
-  enableNotifications: boolean;
-  emailNotifications: boolean;
-  darkMode: boolean;
-  maintenanceMode: boolean;
-}
+export default function Settings() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('account');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [pushNotifications, setPushNotifications] = useState(true);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-export default function SettingsPage() {
-  const [settings, setSettings] = useState<SettingsState>({
-    storeName: "My Store",
-    email: "store@example.com",
-    currency: "USD",
-    language: "en",
-    timezone: "UTC",
-    orderPrefix: "ORD",
-    enableNotifications: true,
-    emailNotifications: true,
-    darkMode: false,
-    maintenanceMode: false,
-  });
-
-  const [activeTab, setActiveTab] = useState("general");
-  const [saved, setSaved] = useState(false);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target;
-    setSettings((prev) => ({
-      ...prev,
-      [name]:
-        type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Settings saved:", settings);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const handleSave = () => {
+    // Simulate saving settings
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const tabs = [
-    { id: "general", label: "General", icon: Store },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "payments", label: "Payments", icon: CreditCard },
-    { id: "shipping", label: "Shipping", icon: Truck },
-    { id: "emails", label: "Emails", icon: Mail },
-    { id: "security", label: "Security", icon: Shield },
+    { id: 'account', label: 'Account', icon: <Person /> },
+    { id: 'notifications', label: 'Notifications', icon: <Notifications /> },
+    { id: 'security', label: 'Security & Privacy', icon: <Security /> },
+    { id: 'payment', label: 'Payment Methods', icon: <CreditCard /> },
+    { id: 'appearance', label: 'Appearance', icon: <Palette /> },
+    { id: 'language', label: 'Language & Region', icon: <Language /> },
+    { id: 'store', label: 'Store Settings', icon: <Store /> },
   ];
 
   return (
-    <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 grid grid-cols-12 overflow-y-visible mx-auto overscroll-y-contain">
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Store Settings
-              </h1>
-              <button
-                onClick={handleSubmit}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </button>
+    <ProtectedRoute>
+      <DashboardLayout>
+        <div className="container mx-auto">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
+            <p className="text-gray-600">Manage your account and preferences</p>
+          </div>
+
+          {saveSuccess && (
+            <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded flex items-center">
+              <Check className="mr-2" />
+              Settings saved successfully!
             </div>
+          )}
 
-            {saved && (
-              <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-md">
-                Settings saved successfully!
-              </div>
-            )}
-
-            <div className="bg-white shadow rounded-lg">
-              <div className="border-b border-gray-200">
-                <nav className="flex -mb-px">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`
-                      group inline-flex items-center px-6 py-4 border-b-2 font-medium text-sm
-                      ${
-                        activeTab === tab.id
-                          ? "border-indigo-500 text-indigo-600"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }
-                    `}
-                    >
-                      <tab.icon
-                        className={`
-                      h-5 w-5 mr-2
-                      ${
-                        activeTab === tab.id
-                          ? "text-indigo-500"
-                          : "text-gray-400 group-hover:text-gray-500"
-                      }
-                    `}
-                      />
-                      {tab.label}
-                    </button>
-                  ))}
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="flex flex-col md:flex-row">
+              {/* Sidebar */}
+              <div className="w-full md:w-64 bg-gray-50 border-r border-gray-200">
+                <nav className="p-4">
+                  <ul className="space-y-1">
+                    {tabs.map((tab) => (
+                      <li key={tab.id}>
+                        <button
+                          onClick={() => setActiveTab(tab.id)}
+                          className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                            activeTab === tab.id
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <span className="mr-3">{tab.icon}</span>
+                          {tab.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </nav>
               </div>
 
-              <div className="p-6">
-                {activeTab === "general" && (
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Store Name
-                      </label>
-                      <input
-                        aria-label="storename"
-                        type="text"
-                        name="storeName"
-                        value={settings.storeName}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Store Email
-                      </label>
-                      <input
-                        aria-label="email"
-                        type="email"
-                        name="email"
-                        value={settings.email}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {/* Content */}
+              <div className="flex-1 p-6">
+                {activeTab === 'account' && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Account Settings</h2>
+                    
+                    <div className="space-y-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Currency
-                        </label>
-                        <select
-                          aria-label="currency"
-                          name="currency"
-                          value={settings.currency}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                          <option value="USD">USD ($)</option>
-                          <option value="EUR">EUR (€)</option>
-                          <option value="GBP">GBP (£)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Language
-                        </label>
-                        <select
-                          aria-label="language"
-                          name="language"
-                          value={settings.language}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                          <option value="en">English</option>
-                          <option value="es">Spanish</option>
-                          <option value="fr">French</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">
-                          Timezone
-                        </label>
-                        <select
-                          aria-label="timezone"
-                          name="timezone"
-                          value={settings.timezone}
-                          onChange={handleInputChange}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                        >
-                          <option value="UTC">UTC</option>
-                          <option value="EST">EST</option>
-                          <option value="PST">PST</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-700">
-                            Dark Mode
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            Enable dark mode for the admin interface
-                          </p>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+                        <div className="flex items-center">
+                          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xl mr-4">
+                            {user?.name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                          </div>
+                          <button className="px-3 py-1 bg-gray-200 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-300">
+                            Change
+                          </button>
+                          <button className="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 ml-2">
+                            Remove
+                          </button>
                         </div>
-                        <button
-                          aria-label="darkmode"
-                          type="button"
-                          onClick={() =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              darkMode: !prev.darkMode,
-                            }))
-                          }
-                          className={`
-                          relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer 
-                          transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
-                          ${settings.darkMode ? "bg-indigo-600" : "bg-gray-200"}
-                        `}
-                        >
-                          <span
-                            className={`
-                          pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition 
-                          ease-in-out duration-200 ${
-                            settings.darkMode
-                              ? "translate-x-5"
-                              : "translate-x-0"
-                          }
-                        `}
-                          />
-                        </button>
                       </div>
-
-                      <div className="flex items-center justify-between">
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <h3 className="text-sm font-medium text-gray-700">
-                            Maintenance Mode
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            Put your store in maintenance mode
-                          </p>
-                        </div>
-                        <button
-                          aria-label="maintmode"
-                          type="button"
-                          onClick={() =>
-                            setSettings((prev) => ({
-                              ...prev,
-                              maintenanceMode: !prev.maintenanceMode,
-                            }))
-                          }
-                          className={`
-                          relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer 
-                          transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
-                          ${
-                            settings.maintenanceMode
-                              ? "bg-indigo-600"
-                              : "bg-gray-200"
-                          }
-                        `}
-                        >
-                          <span
-                            className={`
-                          pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition 
-                          ease-in-out duration-200 ${
-                            settings.maintenanceMode
-                              ? "translate-x-5"
-                              : "translate-x-0"
-                          }
-                        `}
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            defaultValue={user?.name || ''}
                           />
-                        </button>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                          <input
+                            type="text"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            defaultValue={user?.username || ''}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                          <input
+                            type="email"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            defaultValue={user?.email || ''}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                          <input
+                            type="tel"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            defaultValue=""
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "notifications" && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                      
                       <div>
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Push Notifications
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          Receive push notifications for new orders
-                        </p>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                        <textarea
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows={4}
+                          defaultValue=""
+                        ></textarea>
                       </div>
-                      <button
-                        aria-label="pushnotifications"
-                        type="button"
-                        onClick={() =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            enableNotifications: !prev.enableNotifications,
-                          }))
-                        }
-                        className={`
-                        relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer 
-                        transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
-                        ${
-                          settings.enableNotifications
-                            ? "bg-indigo-600"
-                            : "bg-gray-200"
-                        }
-                      `}
-                      >
-                        <span
-                          className={`
-                        pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition 
-                        ease-in-out duration-200 ${
-                          settings.enableNotifications
-                            ? "translate-x-5"
-                            : "translate-x-0"
-                        }
-                      `}
-                        />
-                      </button>
                     </div>
+                  </div>
+                )}
 
-                    <div className="flex items-center justify-between">
+                {activeTab === 'notifications' && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Notification Preferences</h2>
+                    
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
+                        <div>
+                          <h3 className="font-medium text-gray-800">Email Notifications</h3>
+                          <p className="text-sm text-gray-500">Receive order updates and promotional offers via email</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={emailNotifications}
+                            onChange={() => setEmailNotifications(!emailNotifications)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
+                        <div>
+                          <h3 className="font-medium text-gray-800">Push Notifications</h3>
+                          <p className="text-sm text-gray-500">Receive real-time updates on your device</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={pushNotifications}
+                            onChange={() => setPushNotifications(!pushNotifications)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h3 className="font-medium text-gray-800">Notification Types</h3>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            id="orders" 
+                            type="checkbox" 
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            defaultChecked
+                          />
+                          <label htmlFor="orders" className="ml-2 text-sm font-medium text-gray-700">Order updates</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            id="marketing" 
+                            type="checkbox" 
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            defaultChecked
+                          />
+                          <label htmlFor="marketing" className="ml-2 text-sm font-medium text-gray-700">Marketing and promotions</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            id="security" 
+                            type="checkbox" 
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            defaultChecked
+                          />
+                          <label htmlFor="security" className="ml-2 text-sm font-medium text-gray-700">Security alerts</label>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input 
+                            id="system" 
+                            type="checkbox" 
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            defaultChecked
+                          />
+                          <label htmlFor="system" className="ml-2 text-sm font-medium text-gray-700">System updates</label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'appearance' && (
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Appearance Settings</h2>
+                    
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
+                        <div>
+                          <h3 className="font-medium text-gray-800">Dark Mode</h3>
+                          <p className="text-sm text-gray-500">Use dark theme for the application</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={isDarkMode}
+                            onChange={() => setIsDarkMode(!isDarkMode)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                      
                       <div>
-                        <h3 className="text-sm font-medium text-gray-700">
-                          Email Notifications
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          Receive email notifications for new orders
-                        </p>
+                        <h3 className="font-medium text-gray-800 mb-3">Theme Color</h3>
+                        <div className="flex space-x-3">
+                          <button className="w-8 h-8 rounded-full bg-blue-600 ring-2 ring-offset-2 ring-blue-600"></button>
+                          <button className="w-8 h-8 rounded-full bg-purple-600"></button>
+                          <button className="w-8 h-8 rounded-full bg-green-600"></button>
+                          <button className="w-8 h-8 rounded-full bg-red-600"></button>
+                          <button className="w-8 h-8 rounded-full bg-yellow-500"></button>
+                          <button className="w-8 h-8 rounded-full bg-gray-800"></button>
+                        </div>
                       </div>
-                      <button
-                        aria-label="setSettings"
-                        type="button"
-                        onClick={() =>
-                          setSettings((prev) => ({
-                            ...prev,
-                            emailNotifications: !prev.emailNotifications,
-                          }))
-                        }
-                        className={`
-                        relative inline-flex flex-shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer 
-                        transition-colors ease-in-out duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500
-                        ${
-                          settings.emailNotifications
-                            ? "bg-indigo-600"
-                            : "bg-gray-200"
-                        }
-                      `}
-                      >
-                        <span
-                          className={`
-                        pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform ring-0 transition 
-                        ease-in-out duration-200 ${
-                          settings.emailNotifications
-                            ? "translate-x-5"
-                            : "translate-x-0"
-                        }
-                      `}
-                        />
-                      </button>
+                      
+                      <div>
+                        <h3 className="font-medium text-gray-800 mb-3">Font Size</h3>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm">A</span>
+                          <input 
+                            type="range" 
+                            min="1" 
+                            max="5" 
+                            defaultValue="3"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <span className="text-lg">A</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
-
-                {/* Placeholder content for other tabs */}
-                {activeTab === "payments" && (
-                  <div className="text-gray-500">
-                    Payment settings configuration options will appear here.
-                  </div>
-                )}
-                {activeTab === "shipping" && (
-                  <div className="text-gray-500">
-                    Shipping settings configuration options will appear here.
-                  </div>
-                )}
-                {activeTab === "emails" && (
-                  <div className="text-gray-500">
-                    Email template settings will appear here.
-                  </div>
-                )}
-                {activeTab === "security" && (
-                  <div className="text-gray-500">
-                    Security and authentication settings will appear here.
-                  </div>
-                )}
+                
+                {/* Add other tab contents as needed */}
+                
+                <div className="mt-8 flex justify-end">
+                  <button 
+                    className="px-4 py-2 bg-gray-200 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-300 mr-2"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="px-4 py-2 bg-blue-600 rounded-md text-sm font-medium text-white hover:bg-blue-700 flex items-center"
+                    onClick={handleSave}
+                  >
+                    <Save className="mr-1" fontSize="small" />
+                    Save Changes
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

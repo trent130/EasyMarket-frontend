@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import { checkPasswordStrength, PasswordStrengthResult } from '../../utils/passwordStrength';
-import { checkSecurityQuestions, SecurityQuestion, submitSecurityQuestions } from './actions';
+import { checkSecurityQuestions, SecurityQuestion, submitSecurityQuestions } from '@/auth/actions';
 
 const SECURITY_QUESTIONS = [
     "What was the name of your first pet?",

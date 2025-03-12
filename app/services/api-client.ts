@@ -1,5 +1,12 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
+// Storage keys for consistency
+export const STORAGE_KEYS = {
+  TOKEN: 'token',
+  REFRESH_TOKEN: 'refreshToken',
+  USER: 'user'
+};
+
 // Create a separate instance for token refresh to avoid interceptor loops
 const tokenRefreshClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
@@ -14,15 +21,8 @@ const apiClient: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  withCredentials: true, // Enable sending cookies
 });
-
-// Storage keys for consistency
-const STORAGE_KEYS = {
-  TOKEN: 'token',
-  REFRESH_TOKEN: 'refreshToken',
-  USER: 'user'
-};
 
 // Create a flag to track refresh attempts
 let isRefreshing = false;
@@ -55,19 +55,10 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Add request interceptor
+// Add request interceptor to ensure token is included in every request
 apiClient.interceptors.request.use(
   (config) => {
-    // Don't log sensitive information in production
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('API Request:', {
-        url: config.url,
-        method: config.method,
-        headers: config.headers,
-      });
-    }
-    
-    // Always get the latest token
+    // Always get the latest token for each request
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
       if (token) {
@@ -124,6 +115,7 @@ apiClient.interceptors.response.use(
       
       // Update auth headers
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+      tokenRefreshClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       
       // Process queued requests
       processQueue(null, access);
@@ -135,7 +127,7 @@ apiClient.interceptors.response.use(
       processQueue(refreshError, null);
       
       // Clear auth data
-      handleLogout();
+      clearAuthData();
       
       return Promise.reject(refreshError);
     } finally {
@@ -144,22 +136,32 @@ apiClient.interceptors.response.use(
   }
 );
 
-// Utility: Handle Logout
-function handleLogout() {
-  // Check if we're on the client side
+/**
+ * Clears all authentication data from localStorage and removes auth headers
+ */
+export const clearAuthData = () => {
   if (typeof window === 'undefined') return;
-  
-  // Prevent infinite reload
-  if (window.location.pathname === '/auth/signin') return;
   
   // Clear storage
   localStorage.removeItem(STORAGE_KEYS.TOKEN);
   localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
   localStorage.removeItem(STORAGE_KEYS.USER);
   
-  // Redirect to sign-in page
-  window.location.href = '/auth/signin';
-}
+  // Clear auth headers
+  delete apiClient.defaults.headers.common['Authorization'];
+  delete tokenRefreshClient.defaults.headers.common['Authorization'];
+  
+  // Dispatch auth change event
+  window.dispatchEvent(new Event('authChange'));
+};
 
-export { STORAGE_KEYS };
+// Export a function to set the auth token programmatically
+export const setAuthToken = (token: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    tokenRefreshClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
+};
+
 export default apiClient;

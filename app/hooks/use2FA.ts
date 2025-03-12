@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { apiService } from '@/services/api/api';
 import { TwoFactorAuthResponse, TwoFactorStatusResponse, TwoFactorVerifyResponse } from '@/types/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Custom hook for managing 2FA functionality
  */
 export const use2FA = () => {
+  const { refreshUserData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -62,6 +64,8 @@ export const use2FA = () => {
       const response = await apiService.verify2FASetup(token);
       if (response.success) {
         setIs2FAEnabled(true);
+        // Refresh user data to update 2FA status
+        await refreshUserData();
       }
       return response;
     } catch (err: any) {
@@ -85,6 +89,8 @@ export const use2FA = () => {
         setIs2FAEnabled(false);
         setQrCode(null);
         setSecret(null);
+        // Refresh user data to update 2FA status
+        await refreshUserData();
       }
       return response;
     } catch (err: any) {
