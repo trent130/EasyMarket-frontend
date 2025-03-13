@@ -136,7 +136,7 @@ export default function MyProducts() {
 
   return (
     <ProtectedRoute>
-      <DashboardLayout>
+    <DashboardLayout>
         <div className="container mx-auto px-4">
           {/* Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
@@ -277,7 +277,7 @@ export default function MyProducts() {
             </div>
           )}
         </div>
-      </DashboardLayout>
+    </DashboardLayout>
     </ProtectedRoute>
   );
 }

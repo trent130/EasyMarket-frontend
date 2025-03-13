@@ -62,7 +62,7 @@ export default function Dashboard() {
 
   return (
     <ProtectedRoute>
-      <div className="container mx-auto">
+      <div className="container mx-auto sm:overflow-x-auto">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
           <p className="text-gray-600">Welcome back, {user?.name || user?.username || 'User'}!</p>

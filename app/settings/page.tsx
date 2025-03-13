@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
-import { 
+import {
   Person, 
   Notifications, 
   Security, 
-  CreditCard, 
+  CreditCard,
   Language, 
-  Palette, 
+  Palette,
   Store, 
   Save,
   Check
@@ -47,14 +47,14 @@ export default function Settings() {
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
             <p className="text-gray-600">Manage your account and preferences</p>
-          </div>
+              </div>
 
           {saveSuccess && (
             <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded flex items-center">
               <Check className="mr-2" />
-              Settings saved successfully!
-            </div>
-          )}
+                  Settings saved successfully!
+                </div>
+              )}
 
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="flex flex-col md:flex-row">
@@ -64,8 +64,8 @@ export default function Settings() {
                   <ul className="space-y-1">
                     {tabs.map((tab) => (
                       <li key={tab.id}>
-                        <button
-                          onClick={() => setActiveTab(tab.id)}
+                      <button
+                        onClick={() => setActiveTab(tab.id)}
                           className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors ${
                             activeTab === tab.id
                               ? 'bg-blue-50 text-blue-700'
@@ -73,13 +73,13 @@ export default function Settings() {
                           }`}
                         >
                           <span className="mr-3">{tab.icon}</span>
-                          {tab.label}
-                        </button>
+                        {tab.label}
+                      </button>
                       </li>
                     ))}
                   </ul>
-                </nav>
-              </div>
+                  </nav>
+                </div>
 
               {/* Content */}
               <div className="flex-1 p-6">
@@ -106,22 +106,22 @@ export default function Settings() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                          <input
-                            type="text"
+                        <input
+                          type="text"
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             defaultValue={user?.name || ''}
-                          />
-                        </div>
-                        
-                        <div>
+                        />
+                      </div>
+
+                      <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                          <input
+                        <input
                             type="text"
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             defaultValue={user?.username || ''}
-                          />
-                        </div>
-                        
+                        />
+                      </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                           <input
@@ -130,7 +130,7 @@ export default function Settings() {
                             defaultValue={user?.email || ''}
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                           <input
@@ -171,7 +171,7 @@ export default function Settings() {
                             onChange={() => setEmailNotifications(!emailNotifications)}
                           />
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
+                          </label>
                       </div>
                       
                       <div className="flex items-center justify-between p-4 border border-gray-200 rounded-md">
@@ -189,7 +189,7 @@ export default function Settings() {
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <h3 className="font-medium text-gray-800">Notification Types</h3>
                         
@@ -201,7 +201,7 @@ export default function Settings() {
                             defaultChecked
                           />
                           <label htmlFor="orders" className="ml-2 text-sm font-medium text-gray-700">Order updates</label>
-                        </div>
+                          </div>
                         
                         <div className="flex items-center">
                           <input 
@@ -212,7 +212,7 @@ export default function Settings() {
                           />
                           <label htmlFor="marketing" className="ml-2 text-sm font-medium text-gray-700">Marketing and promotions</label>
                         </div>
-                        
+
                         <div className="flex items-center">
                           <input 
                             id="security" 
@@ -221,7 +221,7 @@ export default function Settings() {
                             defaultChecked
                           />
                           <label htmlFor="security" className="ml-2 text-sm font-medium text-gray-700">Security alerts</label>
-                        </div>
+                          </div>
                         
                         <div className="flex items-center">
                           <input 
@@ -232,10 +232,10 @@ export default function Settings() {
                           />
                           <label htmlFor="system" className="ml-2 text-sm font-medium text-gray-700">System updates</label>
                         </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {activeTab === 'appearance' && (
                   <div>
@@ -257,8 +257,8 @@ export default function Settings() {
                           <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                       </div>
-                      
-                      <div>
+
+                        <div>
                         <h3 className="font-medium text-gray-800 mb-3">Theme Color</h3>
                         <div className="flex space-x-3">
                           <button className="w-8 h-8 rounded-full bg-blue-600 ring-2 ring-offset-2 ring-blue-600"></button>
@@ -284,10 +284,10 @@ export default function Settings() {
                           <span className="text-lg">A</span>
                         </div>
                       </div>
+                      </div>
                     </div>
-                  </div>
-                )}
-                
+                  )}
+
                 {/* Add other tab contents as needed */}
                 
                 <div className="mt-8 flex justify-end">

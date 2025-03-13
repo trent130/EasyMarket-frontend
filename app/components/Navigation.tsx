@@ -108,7 +108,7 @@ const Navigation = () => {
           
           <Link href="/product" className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-100 ${isActive('/product')}`}>
             <Inventory className="mr-1" fontSize="small" />
-            Products
+              Products
           </Link>
           
           {isAuthenticated && (
@@ -130,7 +130,7 @@ const Navigation = () => {
           
           <button className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-100`}>
             <Notifications className="text-gray-700" fontSize="small" />
-          </button>
+            </button>
           
           {isAuthenticated ? (
             <div className="flex items-center ml-2">
@@ -149,7 +149,7 @@ const Navigation = () => {
             </div>
           ) : (
             <Link href="/auth/signin" className="ml-2 px-4 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors">
-              Sign In
+                Sign In
             </Link>
           )}
         </div>
@@ -162,53 +162,53 @@ const Navigation = () => {
             <Link href="/" className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive('/')}`}>
               <Home className="mr-2" fontSize="small" />
               Home
-            </Link>
+          </Link>
             
             <Link href="/product" className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive('/product')}`}>
               <Inventory className="mr-2" fontSize="small" />
               Products
-            </Link>
+          </Link>
             
             {isAuthenticated && (
               <Link href="/dashboard" className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive('/dashboard')}`}>
                 <Dashboard className="mr-2" fontSize="small" />
-                Dashboard
-              </Link>
+              Dashboard
+          </Link>
             )}
             
             <Link href="/cart" className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive('/cart')}`}>
               <ShoppingCart className="mr-2" fontSize="small" />
               Cart
-            </Link>
+          </Link>
             
             <Link href="/wishlist" className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive('/wishlist')}`}>
               <Favorite className="mr-2" fontSize="small" />
               Wishlist
-            </Link>
+          </Link>
             
             <div className="flex items-center px-3 py-2 rounded-md text-base font-medium">
               <Notifications className="mr-2" fontSize="small" />
               Notifications
-            </div>
+          </div>
             
-            {isAuthenticated ? (
-              <>
+          {isAuthenticated ? (
+            <>
                 <Link href="/user/profile" className={`flex items-center px-3 py-2 rounded-md text-base font-medium ${isActive('/user/profile')}`}>
                   <Person className="mr-2" fontSize="small" />
                   Profile
-                </Link>
-                <button
+              </Link>
+              <button
                   className="flex items-center w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50"
                   onClick={handleLogout}
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
+              >
+                Logout
+              </button>
+            </>
+          ) : (
               <Link href="/auth/signin" className="block px-3 py-2 rounded-md text-base font-medium bg-blue-600 text-white hover:bg-blue-700 mx-2 text-center">
                 Sign In
-              </Link>
-            )}
+            </Link>
+          )}
           </div>
         </div>
       )}

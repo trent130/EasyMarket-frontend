@@ -17,11 +17,11 @@ const tokenRefreshClient = axios.create({
 });
 
 const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // Enable sending cookies
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    withCredentials: true, // Enable sending cookies
 });
 
 // Create a flag to track refresh attempts
@@ -61,11 +61,11 @@ apiClient.interceptors.request.use(
     // Always get the latest token for each request
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-      if (token) {
+    if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
-      }
     }
-    
+    }
+
     return config;
   },
   (error) => {
@@ -87,7 +87,7 @@ apiClient.interceptors.response.use(
     }
     
     // Mark this request as retried
-    originalRequest._retry = true;
+      originalRequest._retry = true;
     
     // If we're already refreshing, queue this request
     if (isRefreshing) {
@@ -100,36 +100,36 @@ apiClient.interceptors.response.use(
     
     try {
       const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-      if (!refreshToken) {
+        if (!refreshToken) {
         throw new Error('No refresh token available');
-      }
-      
+        }
+        
       const response = await tokenRefreshClient.post('/marketplace/token/refresh/', {
-        refresh: refreshToken
-      });
-      
-      const { access } = response.data;
+          refresh: refreshToken
+        });
+
+        const { access } = response.data;
       
       // Update tokens in localStorage
       localStorage.setItem(STORAGE_KEYS.TOKEN, access);
-      
+
       // Update auth headers
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       tokenRefreshClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       
       // Process queued requests
       processQueue(null, access);
-      
+
       // Return the original request with new token
-      return apiClient(originalRequest);
-    } catch (refreshError) {
+        return apiClient(originalRequest);
+      } catch (refreshError) {
       // Handle refresh failure
       processQueue(refreshError, null);
       
       // Clear auth data
       clearAuthData();
       
-      return Promise.reject(refreshError);
+        return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
     }

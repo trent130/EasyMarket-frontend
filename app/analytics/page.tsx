@@ -91,7 +91,7 @@ export default function Analytics() {
 
   return (
     <ProtectedRoute>
-      <DashboardLayout>
+    <DashboardLayout>
         <div className="container mx-auto">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -136,7 +136,7 @@ export default function Analytics() {
                 Export
               </button>
             </div>
-          </div>
+                </div>
 
           {loading ? (
             <div className="grid grid-cols-1 gap-6 animate-pulse">
@@ -168,7 +168,7 @@ export default function Analytics() {
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
+            </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Product Categories */}
@@ -232,8 +232,8 @@ export default function Analytics() {
                     <div className="flex items-center mt-2">
                       <TrendingUp className="h-4 w-4 text-green-500" />
                       <span className="text-xs text-green-500 ml-1">+5.3% vs last period</span>
-                    </div>
-                  </div>
+                </div>
+                      </div>
 
                   <div className="border rounded-lg p-4">
                     <p className="text-sm text-gray-500">Conversion Rate</p>
@@ -242,7 +242,7 @@ export default function Analytics() {
                       <TrendingUp className="h-4 w-4 text-green-500" />
                       <span className="text-xs text-green-500 ml-1">+0.8% vs last period</span>
                     </div>
-                  </div>
+                </div>
 
                   <div className="border rounded-lg p-4">
                     <p className="text-sm text-gray-500">Customer Acquisition Cost</p>
@@ -250,8 +250,8 @@ export default function Analytics() {
                     <div className="flex items-center mt-2">
                       <TrendingUp className="h-4 w-4 text-red-500 transform rotate-180" />
                       <span className="text-xs text-red-500 ml-1">+2.1% vs last period</span>
-                    </div>
-                  </div>
+              </div>
+            </div>
 
                   <div className="border rounded-lg p-4">
                     <p className="text-sm text-gray-500">Customer Lifetime Value</p>
@@ -261,12 +261,12 @@ export default function Analytics() {
                       <span className="text-xs text-green-500 ml-1">+12.3% vs last period</span>
                     </div>
                   </div>
-                </div>
+              </div>
               </div>
             </>
           )}
-        </div>
-      </DashboardLayout>
+      </div>
+    </DashboardLayout>
     </ProtectedRoute>
   );
 }

@@ -22,8 +22,8 @@ import {
  */
 const handleApiError = (error: unknown): never => {
   if (isApiError(error)) {
-    const apiError: ApiError = {
-      message: error.response?.data?.message || 'An error occurred',
+  const apiError: ApiError = {
+    message: error.response?.data?.message || 'An error occurred',
       status: error.response?.status || 500,
       code: error.response?.data?.code,
       details: error.response?.data?.details
@@ -61,8 +61,8 @@ const ensureArray = <T>(data: T | T[] | null | undefined): T[] => {
 export const apiService = {
     // Auth endpoints
     auth: {
-        login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
-            try {
+    login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
+      try {
                 console.log('Sending login request with credentials:', {
                     ...credentials,
                     password: credentials.password ? '********' : undefined
@@ -213,8 +213,8 @@ export const apiService = {
         updateProfile: async (userData: Partial<User>): Promise<User> => {
             try {
                 const response = await apiClient.put('/marketplace/api/profile/', userData);
-                return response.data;
-            } catch (error) {
+        return response.data;
+      } catch (error) {
                 return handleApiError(error);
             }
         },
@@ -328,8 +328,8 @@ export const apiService = {
         addReview: async (productId: string, reviewData: any): Promise<any> => {
             try {
                 const response = await apiClient.post(`/marketplace/api/products/${productId}/reviews/`, reviewData);
-                return response.data;
-            } catch (error) {
+            return response.data; 
+        } catch (error) {
                 return handleApiError(error);
             }
         }
@@ -359,7 +359,7 @@ export const apiService = {
                 } else if (typeof response.data === 'object') {
                     // If it's an object but not an array, try to extract values
                     categories = Object.values(response.data);
-                } else {
+            } else {
                     categories = [];
                 }
                 
@@ -474,7 +474,7 @@ export const apiService = {
     },
     
     // Convenience methods for 2FA
-    get2FAStatus: async (): Promise<TwoFactorStatusResponse> => {
+  get2FAStatus: async (): Promise<TwoFactorStatusResponse> => {
         return apiService.twoFactor.getStatus();
     },
     
@@ -488,9 +488,9 @@ export const apiService = {
     
     disable2FA: async (token: string): Promise<TwoFactorVerifyResponse> => {
         return apiService.twoFactor.disable(token);
-    },
-    
-    validate2FAToken: async (token: string): Promise<TwoFactorVerifyResponse> => {
+  },
+
+  validate2FAToken: async (token: string): Promise<TwoFactorVerifyResponse> => {
         return apiService.twoFactor.validate(token);
     },
     
@@ -501,7 +501,7 @@ export const apiService = {
     
     logout: async (): Promise<void> => {
         return apiService.auth.logout();
-    },
+  },
 
     // Orders
     createOrder: async (orderData: Partial<Order>): Promise<Order> => {

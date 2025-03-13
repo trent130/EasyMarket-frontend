@@ -101,7 +101,7 @@ export default function TextbookExchange() {
 
   return (
     <ProtectedRoute>
-      <DashboardLayout>
+    <DashboardLayout>
         <div className="container mx-auto px-4">
           {/* Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
@@ -114,7 +114,7 @@ export default function TextbookExchange() {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
               >
                 <Add className="mr-2" fontSize="small" />
-                List a Textbook
+            List a Textbook
               </button>
             </div>
           </div>
@@ -268,7 +268,7 @@ export default function TextbookExchange() {
             </div>
           )}
         </div>
-      </DashboardLayout>
+    </DashboardLayout>
     </ProtectedRoute>
   );
 }
