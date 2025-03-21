@@ -1,138 +1,257 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import {
+    Box,
+    Card,
+    CardContent,
+    Typography,
+    Button,
+    TextField,
+    Grid,
+    CircularProgress,
+    Switch,
+    FormControlLabel,
+    Divider
+} from '@mui/material';
+import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
-import { User } from '@/types/api';
-import { apiService } from '@/services/api/api';
+import { authApi } from '@/services/api/auth';
+import { marketplaceApi } from '@/services/api/marketplace';
 
-export default function UserProfile() {
-  const { user, isAuthenticated, loading } = useAuth();
-  const [profileData, setProfileData] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface UserProfile {
+    id: string;
+    username: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    two_factor_enabled: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export default function UserProfilePage() {
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        address: ''
+    });
+    const { toast } = useToast();
     const router = useRouter();
 
     useEffect(() => {
-    // If not authenticated and not loading, redirect to login
-    if (!isAuthenticated && !loading) {
-      router.push('/auth/signin');
-      return;
-    }
+        const fetchProfile = async () => {
+            try {
+                setLoading(true);
+                const userProfile = await authApi.getProfile();
+                setProfile(userProfile);
+                setFormData({
+                    name: userProfile.name || '',
+                    email: userProfile.email || '',
+                    phone: userProfile.phone || '',
+                    address: userProfile.address || ''
+                });
+            } catch (e: any) {
+                setError(e.message || 'Failed to fetch profile');
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: e.message || 'Failed to fetch profile',
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // If authenticated, fetch profile data
-    if (isAuthenticated && user) {
-      const fetchProfileData = async () => {
+        fetchProfile();
+    }, [toast]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
         try {
-          setIsLoading(true);
-          const profile = await apiService.user.getProfile();
-          setProfileData(profile);
-        } catch (err: any) {
-          console.error('Error fetching profile:', err);
-          setError(err.message || 'Failed to load profile data');
-        } finally {
-          setIsLoading(false);
+            await authApi.updateProfile(formData);
+            setProfile(prev => prev ? { ...prev, ...formData } : null);
+            setIsEditing(false);
+            toast({
+                description: 'Profile updated successfully.'
+            });
+        } catch (e: any) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: e.message || 'Failed to update profile',
+            });
         }
-      };
+    };
 
-      fetchProfileData();
-    }
-  }, [isAuthenticated, loading, user, router]);
+    const handleTwoFactorToggle = async () => {
+        try {
+            if (profile?.two_factor_enabled) {
+                await authApi.disableTwoFactor();
+                toast({
+                    description: 'Two-factor authentication disabled.'
+                });
+            } else {
+                await authApi.enableTwoFactor();
+                toast({
+                    description: 'Two-factor authentication enabled.'
+                });
+            }
+            setProfile(prev => prev ? {
+                ...prev,
+                two_factor_enabled: !prev.two_factor_enabled
+            } : null);
+        } catch (e: any) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: e.message || 'Failed to update two-factor authentication',
+            });
+        }
+    };
 
-  if (loading || isLoading) {
+    if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                <CircularProgress />
+            </Box>
     );
     }
 
     if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <p>{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+            <Box p={3}>
+                <Typography color="error">{error}</Typography>
+            </Box>
+        );
+    }
 
-  const displayUser = profileData || user;
-
-  if (!displayUser) {
+    if (!profile) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <p>No user data available.</p>
-      </div>
+            <Box p={3}>
+                <Typography>Profile not found.</Typography>
+            </Box>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 text-center">User Profile</h1>
-        
-        <div className="mb-6 text-center">
-          {displayUser.profile_image ? (
-            <img 
-              src={displayUser.profile_image} 
-              alt="Profile" 
-              className="w-32 h-32 rounded-full mx-auto object-cover border-4 border-gray-200"
-            />
-          ) : (
-            <div className="w-32 h-32 rounded-full mx-auto bg-gray-300 flex items-center justify-center">
-              <span className="text-4xl text-gray-600">
-                {displayUser.name?.charAt(0) || displayUser.username?.charAt(0) || '?'}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Username</label>
-            <p className="border rounded p-2 w-full bg-gray-50">{displayUser.username || 'Not set'}</p>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Name</label>
-            <p className="border rounded p-2 w-full bg-gray-50">{displayUser.name || 'Not set'}</p>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
-            <p className="border rounded p-2 w-full bg-gray-50">{displayUser.email}</p>
-          </div>
-          
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">2FA Status</label>
-            <p className="border rounded p-2 w-full bg-gray-50">
-              {displayUser.is_2fa_enabled ? 'Enabled' : 'Disabled'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="mt-6 flex justify-center">
-          <button 
-            onClick={() => router.push('/user/profile/edit')}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2"
+        <Box p={3}>
+            <Typography variant="h4" gutterBottom>
+                Profile Settings
+            </Typography>
+
+            <Card>
+                <CardContent>
+                    <form onSubmit={handleSubmit}>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Username"
+                                    value={profile.username}
+                                    disabled
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Name"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Email"
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                />
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                                <TextField
+                                    fullWidth
+                                    label="Phone"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <TextField
+                                    fullWidth
+                                    label="Address"
+                                    name="address"
+                                    multiline
+                                    rows={3}
+                                    value={formData.address}
+                                    onChange={handleInputChange}
+                                    disabled={!isEditing}
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={profile.two_factor_enabled}
+                                            onChange={handleTwoFactorToggle}
+                                        />
+                                    }
+                                    label="Two-Factor Authentication"
+                                />
+                            </Grid>
+                            <Grid item xs={12}>
+                                <Divider sx={{ my: 2 }} />
+                                {isEditing ? (
+                                    <Box sx={{ display: 'flex', gap: 2 }}>
+                                        <Button
+                                            type="submit"
+                                            variant="contained"
+                                            color="primary"
+                                        >
+                                            Save Changes
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            onClick={() => setIsEditing(false)}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </Box>
+                                ) : (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={() => setIsEditing(true)}
           >
             Edit Profile
-          </button>
-          <button 
-            onClick={() => router.push('/user/security')}
-            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Security Settings
-          </button>
-        </div>
-      </div>
-        </div>
+                                    </Button>
+                                )}
+                            </Grid>
+                        </Grid>
+                    </form>
+                </CardContent>
+            </Card>
+        </Box>
     );
 }

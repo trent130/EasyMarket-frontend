@@ -5,6 +5,9 @@ import { MessageCircle } from "lucide-react";
 import type { Message } from "@/types/message";
 import DashboardLayout from "@/components/DashboardLayout";
 //import { /* fetchMessages, */ sendMessage } from "./actions"; // Import server actions
+import { authApi } from '@/services/api/auth';
+import { messagesApi } from '@/services/api/messages';
+import { myProductsApi } from '@/services/api/my-products';
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast"
 

@@ -1,126 +1,149 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Typography, List, ListItem, ListItemText, ListItemSecondaryAction, IconButton } from '@mui/material';
+import {
+    Box,
+    Grid,
+    Typography,
+    CircularProgress,
+    Button,
+    Card,
+    CardContent,
+    CardMedia,
+    IconButton
+} from '@mui/material';
 import { Delete, ShoppingCart } from '@mui/icons-material';
-import Layout from '../layout';
-// import { productsApi } from '@/services/api/products';
+import { useToast } from "@/hooks/use-toast";
 import { marketplaceApi } from '@/services/api/marketplace';
-import { useToast } from "@/hooks/use-toast"
-import { useRouter } from 'next/navigation';
-
-interface WishlistItem {
-    id: number;
-    name: string;
-    price: number;
-    description: string;
-    image: string;
-}
+import { Product } from '@/types/product';
 
 export default function WishlistPage() {
-    const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { toast } = useToast()
-    const router = useRouter()
+    const { toast } = useToast();
 
     useEffect(() => {
         const fetchWishlist = async () => {
-            setIsLoading(true);
-            setError(null);
             try {
-                const wishlistData = await marketplaceApi.getWishlist()
-                setWishlist(wishlistData);
+                setLoading(true);
+                const items = await marketplaceApi.getWishlist();
+                setWishlistItems(items);
             } catch (e: any) {
-                setError(e.message || "Failed to load wishlist");
+                setError(e.message || 'Failed to fetch wishlist');
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: e.message || 'Failed to fetch wishlist',
+                });
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
 
         fetchWishlist();
-    }, []);
+    }, [toast]);
 
-    const handleAddToCart = async (item: WishlistItem) => {
+    const handleRemoveFromWishlist = async (productId: string) => {
         try {
-            await marketplaceApi.addToCart(item.id); // Add to cart
-            setWishlist(prevWishlist => prevWishlist.filter(wishlistItem => wishlistItem.id !== item.id));
+            await marketplaceApi.removeFromWishlist(productId);
+            setWishlistItems(prevItems => prevItems.filter(item => item.id !== productId));
             toast({
-                title: "Success",
-                description: `${item.name} added to cart!`,
-            })
+                description: 'Product removed from wishlist.'
+            });
         } catch (e: any) {
             toast({
                 variant: "destructive",
-                title: "Uh oh! Something went wrong.",
-                description: e.message,
-            })
+                title: "Error",
+                description: e.message || 'Failed to remove product from wishlist',
+            });
         }
     };
 
-    const handleRemoveFromWishlist = async (itemId: number) => {
+    const handleAddToCart = async (productId: string) => {
         try {
-            await marketplaceApi.removeFromWishlist(itemId);
-            setWishlist(prevWishlist => prevWishlist.filter(item => item.id !== itemId));
+            await marketplaceApi.addToCart(productId);
             toast({
-                description: 'You have successfully removed the item from the wishlist.',
-            })
+                description: 'Product added to cart.'
+            });
         } catch (e: any) {
             toast({
                 variant: "destructive",
-                title: "Uh oh! Something went wrong.",
-                description: e.message,
-            })
+                title: "Error",
+                description: e.message || 'Failed to add product to cart',
+            });
         }
-
     };
 
-    if (isLoading) {
-        return <Layout><div>Loading wishlist...</div></Layout>;
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                <CircularProgress />
+            </Box>
+        );
     }
 
     if (error) {
-        return <Layout><div>Error: {error}</div></Layout>;
+        return (
+            <Box p={3}>
+                <Typography color="error">{error}</Typography>
+            </Box>
+        );
     }
 
     return (
-        <Layout>
-            <Typography variant="h4" component="h1" className='mt-20' gutterBottom>
-                Wishlist
+        <Box p={3}>
+            <Typography variant="h4" gutterBottom>
+                My Wishlist
             </Typography>
-            {wishlist.length === 0 ? (
-                <div className='mt-4'>
-                    <Typography>Your wishlist is empty.</Typography>
-                </div>
+
+            {wishlistItems.length === 0 ? (
+                <Typography>Your wishlist is empty.</Typography>
             ) : (
-                <List>
-                    {wishlist.map((item) => (
-                        <ListItem key={item.id}>
-                            <ListItemText
-                                primary={item.name}
-                                secondary={`$${item.price.toFixed(2)}`}
-                            />
-                            <ListItemSecondaryAction>
-                                <IconButton
-                                    edge="end"
-                                    aria-label="add to cart"
-                                    onClick={() => handleAddToCart(item)}
-                                    sx={{ mr: 1 }}
-                                >
-                                    <ShoppingCart />
-                                </IconButton>
-                                <IconButton
-                                    edge="end"
-                                    aria-label="delete"
-                                    onClick={() => handleRemoveFromWishlist(item.id)}
-                                >
-                                    <Delete />
-                                </IconButton>
-                            </ListItemSecondaryAction>
-                        </ListItem>
+                <Grid container spacing={3}>
+                    {wishlistItems.map((product: Product) => (
+                        <Grid item key={product.id} xs={12} sm={6} md={4}>
+                            <Card>
+                                <CardMedia
+                                    component="img"
+                                    height="200"
+                                    image={product.image_url}
+                                    alt={product.title}
+                                    sx={{ objectFit: 'cover' }}
+                                />
+                                <CardContent>
+                                    <Typography gutterBottom variant="h6" component="div">
+                                        {product.title}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" paragraph>
+                                        {product.description}
+                                    </Typography>
+                                    <Typography variant="h6" color="primary" gutterBottom>
+                                        ${product.price.toFixed(2)}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        <Button
+                                            variant="contained"
+                                            color="primary"
+                                            startIcon={<ShoppingCart />}
+                                            onClick={() => handleAddToCart(product.id)}
+                                            fullWidth
+                                        >
+                                            Add to Cart
+                                        </Button>
+                                        <IconButton
+                                            color="error"
+                                            onClick={() => handleRemoveFromWishlist(product.id)}
+                                        >
+                                            <Delete />
+                                        </IconButton>
+                                    </Box>
+                                </CardContent>
+                            </Card>
+                        </Grid>
                     ))}
-                </List>
+                </Grid>
             )}
-        </Layout>
+        </Box>
     );
 }

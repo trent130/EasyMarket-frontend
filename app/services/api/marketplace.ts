@@ -1,7 +1,9 @@
 import apiClient from '../api-client';
-import  { Product }  from '../../types/product';
+import { Product } from '../../types/product';
 import { ApiError, WishlistItem } from '../../types/api';
-import { Category, Review, CartItem }  from '../../types/marketplace';
+import { Category, Review, CartItem, Order } from '../../types/marketplace';
+import { API_CONFIG } from './config';
+import { productCache, categoryCache, cartCache, wishlistCache, generateCacheKey } from './cache';
 
 // Error handler
 const handleApiError = (error: { response?: { data?: { message?: string }; status?: number } }): never => {
@@ -33,7 +35,48 @@ export const marketplaceApi = {
     parent_id?: number;
     include_children?: boolean;
   }): Promise<Category[]> => {
-    const response = await apiClient.get<Category[]>('/marketplace/categories/', { params });
+    const cacheKey = generateCacheKey('categories', params);
+    const cachedData = categoryCache.get<Category[]>(cacheKey);
+    if (cachedData) return cachedData;
+
+    const response = await apiClient.get<Category[]>(API_CONFIG.ENDPOINTS.MARKETPLACE.CATEGORIES, { params });
+    categoryCache.set(cacheKey, response.data);
+    return response.data;
+  },
+
+  // Products
+  getProducts: async (params?: {
+    category?: string;
+    min_price?: number;
+    max_price?: number;
+    condition?: string;
+    in_stock?: boolean;
+    sort_by?: 'relevance' | 'price_asc' | 'price_desc' | 'newest';
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    results: Product[];
+    total: number;
+    page: number;
+    total_pages: number;
+  }> => {
+    const cacheKey = generateCacheKey('products', params);
+    const cachedData = productCache.get<{
+      results: Product[];
+      total: number;
+      page: number;
+      total_pages: number;
+    }>(cacheKey);
+    if (cachedData) return cachedData;
+
+    const response = await apiClient.get<{
+      results: Product[];
+      total: number;
+      page: number;
+      total_pages: number;
+    }>(API_CONFIG.ENDPOINTS.PRODUCTS.LIST, { params });
+    
+    productCache.set(cacheKey, response.data);
     return response.data;
   },
 
@@ -41,17 +84,27 @@ export const marketplaceApi = {
     subcategories: Category[];
     featured_products: Product[];
   }> => {
+    const cacheKey = generateCacheKey(`category:${slug}`);
+    const cachedData = categoryCache.get<Category & { subcategories: Category[]; featured_products: Product[] }>(cacheKey);
+    if (cachedData) return cachedData;
+
     const response = await apiClient.get<Category & {
       subcategories: Category[];
       featured_products: Product[];
-    }>(`/marketplace/categories/${slug}/`);
+    }>(API_CONFIG.ENDPOINTS.MARKETPLACE.CATEGORY_DETAILS(slug));
+    categoryCache.set(cacheKey, response.data);
     return response.data;
   },
 
   // Wishlist
   getWishlist: async (): Promise<WishlistItem[]> => {
     try {
-      const response = await apiClient.get<WishlistItem[]>('/marketplace/api/wishlist/');
+      const cacheKey = 'wishlist';
+      const cachedData = wishlistCache.get<WishlistItem[]>(cacheKey);
+      if (cachedData) return cachedData;
+
+      const response = await apiClient.get<WishlistItem[]>(API_CONFIG.ENDPOINTS.MARKETPLACE.WISHLIST);
+      wishlistCache.set(cacheKey, response.data);
       return response.data;
     } catch (error) {
       if (isApiError(error)) {
@@ -64,7 +117,8 @@ export const marketplaceApi = {
 
   addToWishlist: async (productId: number): Promise<WishlistItem> => {
     try {
-      const response = await apiClient.post<WishlistItem>('/marketplace/api/wishlist/productId/add/', { product_id: productId });
+      const response = await apiClient.post<WishlistItem>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.WISHLIST}${productId}/add/`, { product_id: productId });
+      wishlistCache.delete('wishlist'); // Invalidate wishlist cache
       return response.data;
     } catch (error) {
       if (isApiError(error)) {
@@ -77,7 +131,8 @@ export const marketplaceApi = {
 
   removeFromWishlist: async (productId: number): Promise<void> => {
     try {
-      await apiClient.post<void>('/marketplace/api/wishlist/productId/remove/', { product_id: productId });
+      await apiClient.post<void>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.WISHLIST}${productId}/remove/`, { product_id: productId });
+      wishlistCache.delete('wishlist'); // Invalidate wishlist cache
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -94,11 +149,16 @@ export const marketplaceApi = {
     total_amount: number;
   }> => {
     try {
+      const cacheKey = 'cart';
+      const cachedData = cartCache.get<{ items: CartItem[]; total_items: number; total_amount: number }>(cacheKey);
+      if (cachedData) return cachedData;
+
       const response = await apiClient.get<{
         items: CartItem[];
         total_items: number;
         total_amount: number;
-      }>('/marketplace/cart/');
+      }>(API_CONFIG.ENDPOINTS.MARKETPLACE.CART);
+      cartCache.set(cacheKey, response.data);
       return response.data;
     } catch (error) {
       if (isApiError(error)) {
@@ -111,10 +171,11 @@ export const marketplaceApi = {
 
   addToCart: async (productId: number, quantity: number = 1): Promise<CartItem> => {
     try {
-      const response = await apiClient.post<CartItem>('/marketplace/cart/add/', {
+      const response = await apiClient.post<CartItem>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.CART}add/`, {
         product_id: productId,
         quantity
       });
+      cartCache.delete('cart'); // Invalidate cart cache
       return response.data;
     } catch (error) {
       if (isApiError(error)) {
@@ -127,7 +188,8 @@ export const marketplaceApi = {
 
   removeFromCart: async (itemId: number): Promise<void> => {
     try {
-      await apiClient.delete<void>(`/marketplace/cart/items/${itemId}/`);
+      await apiClient.delete<void>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.CART}items/${itemId}/`);
+      cartCache.delete('cart'); // Invalidate cart cache
     } catch (error) {
       if (isApiError(error)) {
         throw handleApiError(error);
@@ -138,14 +200,16 @@ export const marketplaceApi = {
   },
 
   updateCartItem: async (itemId: number, quantity: number): Promise<CartItem> => {
-    const response = await apiClient.patch<CartItem>(`/marketplace/cart/items/${itemId}/`, {
+    const response = await apiClient.patch<CartItem>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.CART}items/${itemId}/`, {
       quantity
     });
+    cartCache.delete('cart'); // Invalidate cart cache
     return response.data;
   },
 
   clearCart: async (): Promise<void> => {
-    await apiClient.post<void>('/marketplace/cart/clear/');
+    await apiClient.post<void>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.CART}clear/`);
+    cartCache.delete('cart'); // Invalidate cart cache
   },
 
   // Reviews
@@ -164,7 +228,7 @@ export const marketplaceApi = {
       total: number;
       average_rating: number;
       rating_distribution: Record<number, number>;
-    }>(`/marketplace/products/${productId}/reviews/`, { params });
+    }>(API_CONFIG.ENDPOINTS.PRODUCTS.REVIEWS(productId), { params });
     return response.data;
   },
 
@@ -172,7 +236,7 @@ export const marketplaceApi = {
     rating: number;
     comment: string;
   }): Promise<Review> => {
-    const response = await apiClient.post<Review>(`/marketplace/products/${productId}/reviews/`, data);
+    const response = await apiClient.post<Review>(API_CONFIG.ENDPOINTS.PRODUCTS.REVIEWS(productId), data);
     return response.data;
   },
 
@@ -180,12 +244,12 @@ export const marketplaceApi = {
     rating?: number;
     comment?: string;
   }): Promise<Review> => {
-    const response = await apiClient.patch<Review>(`/marketplace/reviews/${reviewId}/`, data);
+    const response = await apiClient.patch<Review>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.REVIEWS}/${reviewId}/`, data);
     return response.data;
   },
 
   deleteReview: async (reviewId: number): Promise<void> => {
-    await apiClient.delete<void>(`/marketplace/reviews/${reviewId}/`);
+    await apiClient.delete<void>(`${API_CONFIG.ENDPOINTS.MARKETPLACE.REVIEWS}/${reviewId}/`);
   },
 
   // Search
@@ -209,7 +273,7 @@ export const marketplaceApi = {
       page: number;
       categories: Category[];
       price_range: { min: number; max: number };
-    }>('/marketplace/search/', { params });
+    }>(API_CONFIG.ENDPOINTS.MARKETPLACE.SEARCH, { params });
     return response.data;
   },
 
@@ -219,7 +283,41 @@ export const marketplaceApi = {
     limit?: number;
     exclude_ids?: number[];
   }): Promise<Product[]> => {
-    const response = await apiClient.get<Product[]>('/marketplace/recommendations/', { params });
+    const response = await apiClient.get<Product[]>(API_CONFIG.ENDPOINTS.MARKETPLACE.RECOMMENDATIONS, { params });
     return response.data;
+  },
+
+  // Orders
+  getOrders: async (params?: {
+    status?: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    results: Order[];
+    total: number;
+    page: number;
+  }> => {
+    const response = await apiClient.get<{
+      results: Order[];
+      total: number;
+      page: number;
+    }>(API_CONFIG.ENDPOINTS.MARKETPLACE.ORDERS, { params });
+    return response.data;
+  },
+
+  // Messaging
+  sendMessage: async (productId: number, message: string): Promise<void> => {
+    try {
+      await apiClient.post<void>(API_CONFIG.ENDPOINTS.MARKETPLACE.MESSAGES, {
+        product_id: productId,
+        message
+      });
+    } catch (error) {
+      if (isApiError(error)) {
+        throw handleApiError(error);
+      } else {
+        throw handleApiError({ response: { data: { message: 'Unexpected error occurred' }, status: 500 } });
+      }
+    }
   }
 };

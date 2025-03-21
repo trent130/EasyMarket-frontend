@@ -1,145 +1,178 @@
-import React from 'react';
-import type { ProductSearchFilters, Category, ProductCondition } from '../../types/product';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { Checkbox } from '../ui/checkbox';
-// import { MenuIcon } from '@mui/icons-material';
-import { Menu } from 'lucide-react'
+"use client";
+
+import React, { useState } from 'react';
+import {
+    Box,
+    Typography,
+    Slider,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    FormControlLabel,
+    Switch,
+    Button,
+    IconButton,
+    Drawer,
+    useMediaQuery,
+    useTheme
+} from '@mui/material';
+import { FilterList, X } from 'lucide-react/dist/esm/icons';
+import { ProductSearchFilters, Category, ProductCondition } from '@/types/product';
 
 interface ProductFilterProps {
-    filters?: Partial<ProductSearchFilters>; // Make filters optional
     categories: Category[];
+    filters: ProductSearchFilters;
     onChange: (filters: Partial<ProductSearchFilters>) => void;
 }
 
-export default function ProductFilter({ 
-    filters = {}, // Provide a default empty object
-    categories = [], // Provide a default empty array 
-    onChange 
-}: ProductFilterProps) {
-    const conditions = [
+const conditions: { value: ProductCondition; label: string }[] = [
         { value: 'new', label: 'New' },
         { value: 'like_new', label: 'Like New' },
         { value: 'good', label: 'Good' },
         { value: 'fair', label: 'Fair' },
-    ];
-    
+    { value: 'poor', label: 'Poor' }
+];
 
-    const handleConditionChange = (value: ProductCondition) => {
-        // This function updates the condition in the filters
-        onChange({ condition: value });
+export default function ProductFilter({ categories, filters, onChange }: ProductFilterProps) {
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+    const handlePriceChange = (_: Event, newValue: number | number[]) => {
+        if (Array.isArray(newValue)) {
+            onChange({
+                min_price: newValue[0],
+                max_price: newValue[1]
+            });
+        }
     };
-    
 
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const handleCategoryChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+        onChange({ category: event.target.value as string });
+    };
 
-    return (
-        <div className=" relative left-0 bg-background-secondary py-4 px-6 z-10 lg:static">
-            <Button 
-                className="lg:hidden absolute top-4 left-4"
-                variant="ghost"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-                <Menu className="h-6 w-6" />
-            </Button>
-            {(isMenuOpen || !isMenuOpen && window.innerWidth > 1024) && (
-                <div className="space-y-6">
-                    {/* Price Range */}
-                    <div className="space-y-2">
-                        <Label>Price Range</Label>
-                        <div className="flex items-center gap-2 ">
-                            <Input
-                                type="number"
-                                placeholder="Min"
-                                value={filters.min_price ?? ''} // Use nullish coalescing
-                                onChange={(e) => onChange({ 
-                                    min_price: e.target.value 
-                                        ? Number(e.target.value) 
-                                        : undefined 
-                                })}
-                                className="w-24"
-                            />
-                            <span>to</span>
-                            <Input
-                                type="number"
-                                placeholder="Max"
-                                value={filters.max_price ?? ''} // Use nullish coalescing
-                                onChange={(e) => onChange({ 
-                                    max_price: e.target.value 
-                                        ? Number(e.target.value) 
-                                        : undefined 
-                                })}
-                                className="w-24"
-                            />
-                        </div>
-                    </div>
+    const handleConditionChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+        onChange({ condition: event.target.value as ProductCondition });
+    };
 
-                    {/* Categories */}
-                    <div className="space-y-2">
-                        <Label>Categories</Label>
-                        <div className="grid grid-cols-2 gap-2">
-                            {categories.map((category) => (
-                                <Button
-                                    key={category.id}
-                                    variant={filters.category === category.id ? 'default' : 'outline'}
-                                    onClick={() => onChange({ category: category.id })}
-                                    className="justify-start"
-                                >
+    const handleInStockChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        onChange({ in_stock: event.target.checked });
+    };
+
+    const clearFilters = () => {
+        onChange({
+            category: undefined,
+            min_price: 0,
+            max_price: 1000,
+            condition: undefined,
+            in_stock: false
+        });
+    };
+
+    const FilterContent = () => (
+        <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+                Filters
+            </Typography>
+
+            <Box sx={{ mb: 3 }}>
+                <Typography gutterBottom>Price Range</Typography>
+                <Slider
+                    value={[filters.min_price || 0, filters.max_price || 1000]}
+                    onChange={handlePriceChange}
+                    valueLabelDisplay="auto"
+                    min={0}
+                    max={1000}
+                    step={10}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography>${filters.min_price || 0}</Typography>
+                    <Typography>${filters.max_price || 1000}</Typography>
+                </Box>
+            </Box>
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Category</InputLabel>
+                <Select
+                    value={filters.category || ''}
+                    label="Category"
+                    onChange={handleCategoryChange}
+                >
+                    <MenuItem value="">All Categories</MenuItem>
+                    {categories.map((category: Category) => (
+                        <MenuItem key={category.id} value={category.id}>
                                     {category.name}
-                                    {category.product_count > 0 && (
-                                        <span className="ml-auto text-xs text-muted-foreground">
-                                            ({category.product_count})
-                                        </span>
-                                    )}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
 
-                    {/* Condition */}
-                    <div className="space-y-2">
-                        <Label>Condition</Label>
-                        <RadioGroup
+            <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel>Condition</InputLabel>
+                <Select
                             value={filters.condition || ''}
-                            onValueChange={handleConditionChange}
+                    label="Condition"
+                    onChange={handleConditionChange}
                         >
+                    <MenuItem value="">All Conditions</MenuItem>
                             {conditions.map((condition) => (
-                                <div key={condition.value} className="flex items-center space-x-2">
-                                    <RadioGroupItem value={condition.value} id={condition.value} />
-                                    <Label htmlFor={condition.value}>{condition.label}</Label>
-                                </div>
-                            ))}
-                        </RadioGroup>
-                    </div>
+                        <MenuItem key={condition.value} value={condition.value}>
+                            {condition.label}
+                        </MenuItem>
+                    ))}
+                </Select>
+            </FormControl>
 
-                    {/* Stock Status */}
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="in_stock"
-                            checked={filters.in_stock}
-                            onCheckedChange={(checked) => onChange({ in_stock: checked as boolean })}
-                        />
-                        <Label htmlFor="in_stock">In Stock Only</Label>
-                    </div>
+            <FormControlLabel
+                control={
+                    <Switch
+                        checked={filters.in_stock || false}
+                        onChange={handleInStockChange}
+                    />
+                }
+                label="In Stock Only"
+                sx={{ mb: 2 }}
+            />
 
-                    {/* Clear Filters */}
                     <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => onChange({
-                            category: undefined,
-                            min_price: undefined,
-                            max_price: undefined,
-                            condition: undefined,
-                            in_stock: undefined,
-                        })}
+                variant="outlined"
+                color="secondary"
+                onClick={clearFilters}
+                fullWidth
                     >
                         Clear Filters
                     </Button>
-                </div>
-            )}
-        </div>
+        </Box>
     );
+
+    if (isMobile) {
+        return (
+            <>
+                <IconButton
+                    onClick={() => setShowFilterMenu(true)}
+                    sx={{ mb: 2 }}
+                >
+                    <FilterList />
+                </IconButton>
+                <Drawer
+                    anchor="right"
+                    open={showFilterMenu}
+                    onClose={() => setShowFilterMenu(false)}
+                >
+                    <Box sx={{ width: 300 }}>
+                        <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="h6">Filters</Typography>
+                            <IconButton onClick={() => setShowFilterMenu(false)}>
+                                <X />
+                            </IconButton>
+                        </Box>
+                        <FilterContent />
+                    </Box>
+                </Drawer>
+            </>
+        );
+    }
+
+    return <FilterContent />;
 }

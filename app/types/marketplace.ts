@@ -48,6 +48,31 @@ export interface Category {
 
 export type ListingStatus = 'active' | 'sold' | 'suspended';
 
+export interface Order {
+  id: number;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+  };
+  items: {
+    product: Product;
+    quantity: number;
+    price: number;
+  }[];
+  total_amount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  shipping_address: {
+    street: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
 // export interface SearchParams {
 //     query?: string;
 //     category?: string;

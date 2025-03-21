@@ -1,6 +1,6 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-
+import { API_CONFIG } from '../app/services/api/config';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,18 +11,14 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        // Validate credentials against backend
         if (!credentials?.username || !credentials?.password) {
           return null;
         }
 
         try {
-          // Ensure this matches your backend token endpoint exactly
-          const response = await fetch('http://127.0.0.1:8000/marketplace/token/', {
+          const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TOKEN}`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: API_CONFIG.HEADERS,
             body: JSON.stringify({
               username: credentials.username,
               password: credentials.password,
@@ -30,7 +26,6 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!response.ok) {
-            // Log the error response for debugging
             const errorData = await response.json();
             console.error('Authentication error:', errorData);
             return null;
@@ -58,7 +53,6 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, account }) {
-      // Initial sign in
       if (user && account) {
         return {
           ...token,
@@ -72,11 +66,10 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
-      // Subsequent calls: check and refresh token
       try {
-        // Verify token validity
-        const response = await fetch('http://localhost:8000/products/api/products/', {
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTS.LIST}`, {
           headers: {
+            ...API_CONFIG.HEADERS,
             Authorization: `Bearer ${token.accessToken}`,
           },
         });
@@ -85,12 +78,9 @@ export const authOptions: NextAuthOptions = {
           return token;
         }
 
-        // Token expired, attempt to refresh
-        const refreshResponse = await fetch('http://localhost:8000/marketplace/token/refresh/', {
+        const refreshResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: API_CONFIG.HEADERS,
           body: JSON.stringify({
             refresh: token.refreshToken,
           }),
@@ -104,7 +94,6 @@ export const authOptions: NextAuthOptions = {
           };
         }
 
-        // Refresh failed
         throw new Error('Token refresh failed');
       } catch (error) {
         console.error('Token refresh error:', error);
@@ -112,7 +101,6 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session, token }) {
-      // Add tokens and user info to session
       return {
         ...session,
         user: {

@@ -8,20 +8,39 @@ import { Heart, MessageCircle, ShoppingCart } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardFooter } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { cn } from "../../../lib/utils";
+import { cn, formatPrice, getConditionInfo } from "../../../lib/utils";
 import { useAppContext } from "../../AppContext";
 import ChatUI from "../chat/ChatUI";
-import { Product } from "@/types";
-// import { Box, Grid } from "@mui/material";
+import type { ProductBase } from "@/types/product";
+import {
+    CardMedia,
+    Typography,
+    IconButton,
+    Box,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField
+} from '@mui/material';
+import { Favorite, FavoriteBorder, Chat } from '@mui/icons-material';
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
+import { marketplaceApi } from '@/services/api/marketplace';
 
 interface ProductCardProps {
-  product: Product;
+  product: ProductBase;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { wishlist, addToWishlist, removeFromWishlist, addToCart } =
     useAppContext();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [message, setMessage] = useState('');
+  const { toast } = useToast();
+  const router = useRouter();
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -30,18 +49,34 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       if (isInWishlist) {
         await removeFromWishlist(product.id);
+        toast({
+          description: 'Product removed from wishlist.'
+        });
       } else {
         await addToWishlist(product);
+        toast({
+          description: 'Product added to wishlist.'
+        });
       }
+      setIsWishlisted(!isInWishlist);
     } catch (error) {
       console.error("Wishlist toggle failed:", error);
     }
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    addToCart(product);
-    console.log("Image URL:", product.image_url);
+  const handleAddToCart = async () => {
+    try {
+      await marketplaceApi.addToCart(product.id);
+      toast({
+        description: 'Product added to cart.'
+      });
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: e.message,
+      });
+    }
   };
 
   const handleChatToggle = (e: React.MouseEvent) => {
@@ -49,27 +84,24 @@ export default function ProductCard({ product }: ProductCardProps) {
     setIsChatOpen(!isChatOpen);
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "KES",
-    }).format(price);
-  };
-
-  const getConditionColor = (condition: string) => {
-    switch (condition) {
-      case "new":
-        return "bg-green-100 text-green-800";
-      case "like_new":
-        return "bg-blue-100 text-blue-800";
-      case "good":
-        return "bg-yellow-100 text-yellow-800";
-      case "fair":
-        return "bg-orange-100 text-orange-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  const handleSendMessage = async () => {
+    try {
+      await marketplaceApi.sendMessage(product.id, message);
+      toast({
+        description: 'Message sent successfully.'
+      });
+      setShowChat(false);
+      setMessage('');
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Uh oh! Something went wrong.",
+        description: e.message,
+      });
     }
   };
+
+  const conditionInfo = getConditionInfo(product.condition);
 
   return (
     <Card className="group relative overflow-hidden transition-all hover:shadow-lg">
@@ -87,19 +119,18 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
 
           <div className="absolute top-2 right-2 z-10 flex space-x-2">
-            <Button variant="ghost" size="icon" onClick={handleWishlistToggle}>
-              <Heart
-                className={cn(
-                  "h-5 w-5",
-                  wishlist.some((item) => item.id === product.id)
-                    ? "fill-red-500 text-red-500"
-                    : "text-gray-500"
-                )}
-              />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleChatToggle}>
-              <MessageCircle className="h-5 w-5 text-gray-500" />
-            </Button>
+            <IconButton
+              color={isWishlisted ? 'error' : 'default'}
+              onClick={handleWishlistToggle}
+            >
+              <Favorite />
+            </IconButton>
+            <IconButton
+              color="primary"
+              onClick={() => setShowChat(true)}
+            >
+              <Chat />
+            </IconButton>
           </div>
         </div>
 
@@ -107,9 +138,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="mb-2 flex items-center justify-between">
             <Badge
               variant="outline"
-              className={cn("text-xs", getConditionColor(product.condition))}
+              className={cn("text-xs", `bg-${conditionInfo.color}-100 text-${conditionInfo.color}-800`)}
             >
-              {product.condition.replace("_", " ")}
+              {conditionInfo.label}
             </Badge>
             {product.average_rating > 0 && (
               <div className="flex items-center text-sm text-yellow-500">
@@ -167,6 +198,29 @@ export default function ProductCard({ product }: ProductCardProps) {
           />
         </div>
       )}
+
+      <Dialog open={showChat} onClose={() => setShowChat(false)}>
+        <DialogTitle>Send Message to Seller</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Message"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            value={message}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMessage(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowChat(false)}>Cancel</Button>
+          <Button onClick={handleSendMessage} variant="contained">
+            Send
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }

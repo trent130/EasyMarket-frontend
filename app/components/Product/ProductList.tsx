@@ -1,15 +1,19 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { debounce } from 'lodash';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Grid, Box, Typography, Pagination, CircularProgress } from '@mui/material';
+import { Product, ProductSearchFilters, Category } from '@/types/product';
+import { marketplaceApi } from '@/services/api/marketplace';
 import { productService } from '@/services/api/products';
-import type { ProductBase, ProductSearchFilters, Category } from '../../types/product';
 import ProductCard from './ProductCard';
 import ProductFilter from './ProductFilter';
-import { Button } from '../ui/button';
-import { useRouter, useSearchParams } from 'next/dist/client/components/navigation';
+import debounce from 'lodash/debounce';
 
-const ITEMS_PER_PAGE = 12;
+interface ProductListProps {
+    initialProducts?: Product[];
+    initialCategories?: Category[];
+}
 
 /**
  * A page that displays a list of products with filters and pagination.
@@ -21,177 +25,130 @@ const ITEMS_PER_PAGE = 12;
  *
  * @returns A React component that displays a list of products with filters and pagination.
  */
-export default function ProductList() {
+export default function ProductList({ initialProducts = [], initialCategories = [] }: ProductListProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
-
-    // State
-    const [products, setProducts] = useState<ProductBase[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState<Product[]>(initialProducts);
+    const [categories, setCategories] = useState<Category[]>(initialCategories);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [totalItems, setTotalItems] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
     const [filters, setFilters] = useState<ProductSearchFilters>({
-        query: searchParams?.get('query') || undefined,
-        category: Number(searchParams?.get('category')) || undefined,
-        min_price: searchParams?.get('min_price') 
-        ? Number(searchParams.get('min_price')) 
-        : undefined,
-        max_price: searchParams?.get('max_price') 
-        ? Number(searchParams.get('max_price')) 
-        : undefined,
-        condition: searchParams?.get('condition') as any || undefined,
-        sort_by: searchParams?.get('sort_by') as any || 'newest',
-        in_stock: searchParams?.get('in_stock') === 'true'
+        query: searchParams.get('q') || '',
+        category: searchParams.get('category') || undefined,
+        min_price: Number(searchParams.get('min_price')) || 0,
+        max_price: Number(searchParams.get('max_price')) || 1000,
+        condition: searchParams.get('condition') as Product['condition'] || undefined,
+        in_stock: searchParams.get('in_stock') === 'true',
+        sort_by: searchParams.get('sort_by') || 'relevance',
+        page: Number(searchParams.get('page')) || 1,
+        page_size: 12
     });
 
-    // Load categories
+    // Load categories if not provided
     useEffect(() => {
-    /**
-     * Loads the categories from the API and sets them to the state.
-     *
-     * This function is called once on mount and whenever the filters change.
-     * If the load fails, it will log an error to the console.
-     */
         const loadCategories = async () => {
-            try {
-                const data = await productService.getCategories();
-                setCategories(data);
-            } catch (error) {
-                console.error('Failed to load categories:', error);
+            if (categories.length === 0) {
+                try {
+                    const categoriesData = await productService.getCategories();
+                    setCategories(categoriesData);
+                } catch (error) {
+                    console.error('Failed to fetch categories:', error);
+                }
             }
         };
         loadCategories();
-    }, []);
+    }, [categories.length]);
 
-    // Load products with current filters
-    const loadProducts = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await productService.searchProducts({
-                ...filters,
-                page: currentPage
-            });
-            setProducts(response.results);
-            setTotalItems(response.count);
-        } catch (error) {
-            setError('Failed to load products');
-            console.error('Failed to load products:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [filters, currentPage]);
+    // Debounced search handler
+    const debouncedSearch = useCallback(
+        debounce(async (searchFilters: ProductSearchFilters) => {
+            setLoading(true);
+            setError(null);
+            try {
+                const searchResults = await marketplaceApi.search(searchFilters);
+                setProducts(searchResults.results);
+            } catch (e: any) {
+                setError(e.message || 'Failed to fetch products');
+                setProducts([]);
+            } finally {
+                setLoading(false);
+            }
+        }, 500),
+        []
+    );
 
-    useEffect(() => {
-        loadProducts();
-    }, [loadProducts]);
-
-    // Update URL with filters
+    // Update URL with current filters
     useEffect(() => {
         const params = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
-            if (value !== undefined) {
-                params.set(key, String(value));
+            if (value !== undefined && value !== '') {
+                params.set(key, value.toString());
             }
         });
         router.push(`?${params.toString()}`);
     }, [filters, router]);
 
-    // Debounced search handler
-    const debouncedSearch = useCallback(
-        debounce((query: string) => {
-            setFilters(prev => ({ ...prev, query }));
-            setCurrentPage(1);
-        }, 300),
-        []
-    );
+    // Load products when filters change
+    useEffect(() => {
+        debouncedSearch(filters);
+    }, [filters, debouncedSearch]);
 
-    // Filter handlers
     const handleFilterChange = (newFilters: Partial<ProductSearchFilters>) => {
-        setFilters(prev => ({ ...prev, ...newFilters }));
-        setCurrentPage(1);
+        setFilters(prev => ({
+            ...prev,
+            ...newFilters,
+            page: 1 // Reset to first page when filters change
+        }));
     };
 
-    // Sort handler
-    const handleSortChange = (value: string) => {
-        setFilters(prev => ({ ...prev, sort_by: value as any }));
+    const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+        setFilters(prev => ({
+            ...prev,
+            page: value
+        }));
     };
-
-    // Pagination handler
-    const handlePageChange = (page: number) => {
-        setCurrentPage(page);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    if (error) {
-        return (
-            <div className="text-center py-12">
-                <p className="text-red-500">{error}</p>
-                <Button onClick={loadProducts} className="mt-4">
-                    Try Again
-                </Button>
-            </div>
-        );
-    }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                {/* Filters */}
-                <div className="md:col-span-1 ">
+        <Box>
+            <Grid container spacing={3}>
+                <Grid item xs={12} md={3}>
                     <ProductFilter
-                        filters={filters}
                         categories={categories}
+                        filters={filters}
                         onChange={handleFilterChange}
                     />
-                </div>
-
-                {/* Products */}
-                <div className="md:col-span-3">
-
-                    {/* Product Grid */}
+                </Grid>
+                <Grid item xs={12} md={9}>
                     {loading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
-                            {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="h-[350px] rounded-lg bg-gray-100 animate-pulse"
-                                />
-                            ))}
-                        </div>
-                    ) : products.length > 0 ? (
-                        <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2  gap-6">
-                                {products.map(product => (
-                                    <ProductCard key={product.slug} product={product} />
-                                ))}
-                            </div>
-
-                            {/* Pagination */}
-                            <div className="mt-8 flex justify-center gap-2">
-                                {Array.from(
-                                    { length: Math.ceil(totalItems / ITEMS_PER_PAGE) },
-                                    (_, i) => i + 1
-                                ).map(page => (
-                                    <Button
-                                        key={page}
-                                        variant={page === currentPage ? 'default' : 'outline'}
-                                        onClick={() => handlePageChange(page)}
-                                    >
-                                        {page}
-                                    </Button>
-                                ))}
-                            </div>
-                        </>
+                        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+                            <CircularProgress />
+                        </Box>
+                    ) : error ? (
+                        <Typography color="error">{error}</Typography>
+                    ) : products.length === 0 ? (
+                        <Typography>No products found matching your criteria.</Typography>
                     ) : (
-                        <div className="text-center py-12">
-                            <p className="text-gray-500">No products found</p>
-                        </div>
+                        <>
+                            <Grid container spacing={3}>
+                                {products.map((product: Product) => (
+                                    <Grid item key={product.id} xs={12} sm={6} md={4}>
+                                        <ProductCard product={product} />
+                                    </Grid>
+                                ))}
+                            </Grid>
+                            <Box display="flex" justifyContent="center" mt={4}>
+                                <Pagination
+                                    count={Math.ceil(products.length / filters.page_size)}
+                                    page={filters.page}
+                                    onChange={handlePageChange}
+                                    color="primary"
+                                    size="large"
+                                />
+                            </Box>
+                        </>
                     )}
-                </div>
-            </div>
-        </div>
+                </Grid>
+            </Grid>
+        </Box>
     );
 }
