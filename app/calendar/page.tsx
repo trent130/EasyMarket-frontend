@@ -7,40 +7,36 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { toast } from "@/hooks/use-toast"
 import { calendarApi } from "@/services/api/calendarApi";
 import { useRouter } from 'next/navigation';
+import { LoadingState } from '@/components/LoadingState';
+import { Calendar as UiCalendar } from '@/components/ui/calendar';
 
 /**
  * A calendar component that shows a grid of days in a month
  * and marks the days that have events with a colored dot.
  */
-export default function CalendarView() {
+export default function CalendarPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    // const { toast } = toast()
+    const [error, setError] = useState<Error | null>(null);
     const router = useRouter()
 
     useEffect(() => {
-        const loadEvents = async () => {
-            setIsLoading(true);
-            setError(null);
+        const fetchEvents = async () => {
             try {
-                const eventsData = await calendarApi.getEvents()
-                setEvents(eventsData);
-            } catch (e: any) {
-                setError(e.message || "Failed to load events.");
-                toast({
-                    variant: "destructive",
-                    title: "Uh oh! Something went wrong.",
-                    description: error,
-                })
+                setIsLoading(true);
+                const data = await calendarApi.getEvents();
+                setEvents(data);
+                setError(null);
+            } catch (err) {
+                setError(err instanceof Error ? err : new Error('Failed to fetch events'));
             } finally {
                 setIsLoading(false);
             }
         };
 
-        loadEvents();
-    }, [currentDate, router]);
+        fetchEvents();
+    }, []);
 
     const daysInMonth = new Date(
         currentDate.getFullYear(),
@@ -122,6 +118,24 @@ export default function CalendarView() {
         return days;
     };
 
+    if (isLoading) {
+        return <LoadingState variant="spinner" />;
+    }
+
+    if (error) {
+        return (
+            <div className="text-center py-8">
+                <p className="text-red-500 mb-4">{error.message}</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
+
     return (
         <DashboardLayout>
             <div className="max-w-7xl mx-auto p-6">
@@ -149,27 +163,21 @@ export default function CalendarView() {
                     </div>
                 </div>
 
-                {isLoading ? (
-                    <div>Loading events...</div>
-                ) : error ? (
-                    <div className="text-red-500">Error: {error}</div>
-                ) : (
-                    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                        <div className="grid grid-cols-7 gap-px bg-gray-200">
-                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                <div
-                                    key={day}
-                                    className="bg-gray-50 py-2 text-center text-sm font-semibold text-gray-700"
-                                >
-                                    {day}
-                                </div>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-7 gap-px bg-gray-200">
-                            {renderCalendarDays()}
-                        </div>
+                <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div className="grid grid-cols-7 gap-px bg-gray-200">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                            <div
+                                key={day}
+                                className="bg-gray-50 py-2 text-center text-sm font-semibold text-gray-700"
+                            >
+                                {day}
+                            </div>
+                        ))}
                     </div>
-                )}
+                    <div className="grid grid-cols-7 gap-px bg-gray-200">
+                        {renderCalendarDays()}
+                    </div>
+                </div>
 
                 <div className="mt-6 bg-white rounded-lg shadow-lg p-4">
                     <h4 className="text-lg font-semibold text-gray-900 mb-4">Event Types</h4>

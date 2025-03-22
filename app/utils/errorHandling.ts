@@ -1,68 +1,112 @@
 import axios from 'axios';
+import { ApiError } from '@/types/api';
 
-export class ApiError extends Error {
-    public status: number;
-    public details?: unknown;
-
+export class ApplicationError extends Error {
     constructor(
-        status: number, 
-        message: string, 
-        details?: unknown
+        message: string,
+        public code: string,
+        public status: number = 500,
+        public details?: Record<string, any>
     ) {
         super(message);
-        this.name = 'ApiError';
-        this.status = status;
-        this.details = details;
+        this.name = 'ApplicationError';
     }
 }
 
-export function handleApiError(error: unknown): string {
-    // Check if it's an axios error or a custom ApiError
-    if (error instanceof ApiError) {
-        switch (error.status) {
+export class ValidationError extends ApplicationError {
+    constructor(message: string, public errors: Record<string, string[]>) {
+        super(message, 'VALIDATION_ERROR', 400, { errors });
+        this.name = 'ValidationError';
+    }
+}
+
+export class AuthenticationError extends ApplicationError {
+    constructor(message: string = 'Authentication required') {
+        super(message, 'AUTHENTICATION_ERROR', 401);
+        this.name = 'AuthenticationError';
+    }
+}
+
+export class AuthorizationError extends ApplicationError {
+    constructor(message: string = 'Permission denied') {
+        super(message, 'AUTHORIZATION_ERROR', 403);
+        this.name = 'AuthorizationError';
+    }
+}
+
+export class NotFoundError extends ApplicationError {
+    constructor(message: string = 'Resource not found') {
+        super(message, 'NOT_FOUND', 404);
+        this.name = 'NotFoundError';
+    }
+}
+
+export function handleApiError(error: unknown): never {
+    if (error instanceof ApplicationError) {
+        throw error;
+    }
+
+    if (isAxiosError(error)) {
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message;
+        const details = error.response?.data;
+
+        switch (status) {
             case 400:
-                return 'Invalid request. Please check your input.';
+                if (details?.errors) {
+                    throw new ValidationError(message, details.errors);
+                }
+                throw new ApplicationError(message, 'BAD_REQUEST', status, details);
             case 401:
-                return 'Unauthorized. Please log in again.';
+                throw new AuthenticationError(message);
             case 403:
-                return 'You do not have permission to perform this action.';
+                throw new AuthorizationError(message);
             case 404:
-                return 'The requested resource was not found.';
-            case 500:
-                return 'An internal server error occurred. Please try again later.';
+                throw new NotFoundError(message);
             default:
-                return error.message || 'An unexpected error occurred.';
+                throw new ApplicationError(
+                    message,
+                    'API_ERROR',
+                    status,
+                    details
+                );
         }
     }
 
-    // Handle axios errors
-    if (axios.isAxiosError(error)) {
-        const axiosError = error;
-        if (axiosError.response) {
-            // The request was made and the server responded with a status code
-            return handleApiError(
-                new ApiError(
-                    axiosError.response.status, 
-                    axiosError.response.data?.message || 'An error occurred',
-                    axiosError.response.data
-                )
-            );
-        } else if (axiosError.request) {
-            // The request was made but no response was received
-            return 'No response received from the server. Please check your internet connection.';
-        } else {
-            // Something happened in setting up the request
-            return 'Error setting up the request. Please try again.';
-        }
-    }
-
-    // Handle other types of errors
     if (error instanceof Error) {
-        return error.message || 'An unexpected error occurred.';
+        throw new ApplicationError(
+            error.message,
+            'UNKNOWN_ERROR',
+            500,
+            { originalError: error }
+        );
     }
 
-    // Fallback for unhandled error types
-    return 'An unknown error occurred.';
+    throw new ApplicationError(
+        'An unknown error occurred',
+        'UNKNOWN_ERROR',
+        500,
+        { originalError: error }
+    );
+}
+
+function isAxiosError(error: unknown): error is {
+    response?: {
+        status?: number;
+        data?: {
+            message?: string;
+            errors?: Record<string, string[]>;
+            [key: string]: any;
+        };
+    };
+    message: string;
+} {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'message' in error &&
+        ('response' in error || 'request' in error)
+    );
 }
 
 // Utility function for logging errors

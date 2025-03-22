@@ -1,4 +1,4 @@
-export type ProductCondition = 'new' | 'like_new' | 'good' | 'fair';
+export type ProductCondition = 'new' | 'like_new' | 'good' | 'fair' | 'poor';
 
 export interface Category {
     id: number;
@@ -49,22 +49,27 @@ export interface ProductBase {
     created_at: string;
 }
 
-
-export interface Product extends ProductBase {
+export interface Product {
+    id: string | number;
+    title?: string;
+    name?: string;
+    slug: string;
     description: string;
-    image_url: string;
+    price: string | number;
+    image_url?: string;
+    imageUrl?: string;
+    category_id: string | number;
     category_name: string;
-    average_rating: number;
-    available_stock: number;
-    has_variants: boolean;
-    total_sales: number;
-    variants?: ProductVariant[];
+    student_id: string | number;
+    student_name: string;
+    condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor';
+    available_stock?: number;
+    stock?: number;
+    average_rating?: number;
+    rating?: number;
+    created_at: string;
     updated_at: string;
-    statistics: ProductStatistics;
-    student: ProductSeller;
-    reviews: ProductReviews;
 }
-  
 
 export interface ProductDetail extends Omit<ProductBase, 'category' | 'category_name' | 'student'> {
     description: string;
@@ -128,35 +133,50 @@ export interface ProductVariant {
     is_active: boolean;
   }
   
-  export interface ProductReview {
-    id: number;
+export interface ProductDetails extends Product {
+    reviews: ProductReview[];
+    related_products: Product[];
+    seller_info: {
+        id: string;
+        name: string;
+        rating: number;
+        total_sales: number;
+    };
+}
+
+export interface ProductReview {
+    id: string;
+    user_id: string;
+    user_name: string;
     rating: number;
     comment: string;
-    reviewer_name: string;
     created_at: string;
-  }
-  
-  export interface ProductStatistics {
+}
+
+export interface ProductStatistics {
     total_sales: number;
     total_revenue: number;
     last_sale_date: string;
     average_rating: number;
     review_count: number;
     views_count: number;
-  }
-  
-  export interface ProductSeller {
+}
+
+export interface ProductSeller {
     id: number;
     username: string;
     rating: number;
     products_count: number;
     joined_date: string;
-  }
-  
-  export interface ProductReviews {
+}
+
+export interface ProductReviews {
     average: number;
     count: number;
     recent: ProductReview[];
-  }
-  
+}
+
+export type ProductFormData = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'slug'> & {
+  images: File[];
+};
 

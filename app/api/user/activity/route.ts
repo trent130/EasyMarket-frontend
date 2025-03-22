@@ -1,16 +1,32 @@
-// import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 // import { getServerSession } from 'next-auth/next';
 // import { users } from '@/lib/models/user';
 // import { logSecurityEvent } from '@/lib/utils/logger';
 
+interface ActivityLog {
+  timestamp: number;
+  action: string;
+  details: string;
+}
+
 // This is a mock function. In a real application, you would fetch logs from a database.
-function getUserActivityLogs(userId: string) {
+export async function getUserActivityLogs(_userId: string): Promise<ActivityLog[]> {
   // Simulating activity logs
   return [
     { timestamp: Date.now() - 86400000, action: 'Login', details: 'Successful login from IP 192.168.1.1' },
     { timestamp: Date.now() - 172800000, action: 'Password Change', details: 'Password changed successfully' },
     { timestamp: Date.now() - 259200000, action: 'Login', details: 'Failed login attempt from IP 10.0.0.1' },
   ];
+}
+
+export async function GET(_request: NextRequest) {
+  try {
+    const logs = await getUserActivityLogs('dummy-id');
+    return NextResponse.json(logs);
+  } catch (_error) {
+    return NextResponse.json({ error: 'Failed to fetch activity logs' }, { status: 500 });
+  }
 }
 
 // export async function GET(req: Request) {

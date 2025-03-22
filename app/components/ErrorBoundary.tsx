@@ -1,8 +1,6 @@
 'use client';
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Typography, Button, Container } from '@mui/material';
-import { Error as ErrorIcon } from '@mui/icons-material';
+import { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -11,13 +9,12 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  error?: Error;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -28,10 +25,6 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('Uncaught error:', error, errorInfo);
   }
 
-  private handleReset = () => {
-    this.setState({ hasError: false, error: null });
-  };
-
   public render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
@@ -39,35 +32,18 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <Container maxWidth="sm">
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: '100vh',
-              textAlign: 'center',
-              p: 3,
-            }}
+        <div className="text-center py-8">
+          <h2 className="text-xl font-semibold text-red-600 mb-4">Something went wrong</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
           >
-            <ErrorIcon color="error" sx={{ fontSize: 60, mb: 2 }} />
-            <Typography variant="h4" component="h1" gutterBottom>
-              Oops! Something went wrong
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={this.handleReset}
-              sx={{ mt: 2 }}
-            >
-              Try again
-            </Button>
-          </Box>
-        </Container>
+            Try again
+          </button>
+        </div>
       );
     }
 

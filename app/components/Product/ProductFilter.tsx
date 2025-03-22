@@ -17,7 +17,8 @@ import {
     useMediaQuery,
     useTheme
 } from '@mui/material';
-import { FilterList, X } from 'lucide-react/dist/esm/icons';
+import { X } from 'lucide-react';
+import { FiFilter as FilterList } from 'react-icons/fi';
 import { ProductSearchFilters, Category, ProductCondition } from '@/types/product';
 
 interface ProductFilterProps {
@@ -31,7 +32,7 @@ const conditions: { value: ProductCondition; label: string }[] = [
         { value: 'like_new', label: 'Like New' },
         { value: 'good', label: 'Good' },
         { value: 'fair', label: 'Fair' },
-    { value: 'poor', label: 'Poor' }
+        { value: 'poor', label: 'Poor' }
 ];
 
 export default function ProductFilter({ categories, filters, onChange }: ProductFilterProps) {

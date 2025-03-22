@@ -1,8 +1,23 @@
 export interface Product {
-  id: number;
-  name: string;
+  id: string | number;
+  title?: string;
+  name?: string;
+  slug: string;
   description: string;
-  price: number;
+  price: string | number;
+  image_url?: string;
+  imageUrl?: string;
+  category_id: string | number;
+  category_name: string;
+  student_id: string | number;
+  student_name: string;
+  condition: 'new' | 'like_new' | 'good' | 'fair' | 'poor';
+  available_stock?: number;
+  stock?: number;
+  average_rating?: number;
+  rating?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CartItem {
@@ -96,6 +111,16 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   status: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+  };
 }
 
 export interface TwoFactorAuthResponse {

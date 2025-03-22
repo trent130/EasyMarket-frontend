@@ -92,7 +92,7 @@ export default function WishlistPage() {
     }
 
     return (
-        <Box p={3}>
+        <Box p={3} sx={{ mt: 10 }}>
             <Typography variant="h4" gutterBottom>
                 My Wishlist
             </Typography>

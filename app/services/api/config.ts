@@ -15,7 +15,17 @@ export const API_CONFIG = {
       MY_PRODUCTS: '/marketplace/my-products/',
       MY_PRODUCT_DETAIL: (id: number) => `/marketplace/my-products/${id}/`,
       MY_PRODUCT_STATUS: (id: number) => `/marketplace/my-products/${id}/status/`,
-      MY_PRODUCT_IMAGES: (id: number) => `/marketplace/my-products/${id}/images/`
+      MY_PRODUCT_IMAGES: (id: number) => `/marketplace/my-products/${id}/images/`,
+      DRAFT: {
+        CREATE: '/marketplace/my-products/draft/',
+        GET: (id: number) => `/marketplace/my-products/draft/${id}/`,
+        UPDATE: (id: number) => `/marketplace/my-products/draft/${id}/`,
+        DELETE: (id: number) => `/marketplace/my-products/draft/${id}/`,
+        PUBLISH: (id: number) => `/marketplace/my-products/draft/${id}/publish/`,
+        VALIDATE: '/marketplace/my-products/validate/',
+        UPLOAD_IMAGE: '/marketplace/my-products/upload-image/',
+        DELETE_IMAGE: '/marketplace/my-products/delete-image/'
+      }
     },
     MARKETPLACE: {
       CATEGORIES: '/marketplace/categories/',
@@ -30,6 +40,13 @@ export const API_CONFIG = {
       MESSAGE_READ: (id: number) => `/marketplace/messages/${id}/read/`,
       REVIEWS: '/marketplace/reviews/',
       ORDERS: '/marketplace/orders/'
+    },
+    TEXTBOOKS: {
+      SEARCH: '/marketplace/textbooks/search/',
+      DETAIL: (isbn: string) => `/marketplace/textbooks/${isbn}/`,
+      IMAGES: (isbn: string) => `/marketplace/textbooks/${isbn}/images/`,
+      COURSE_CODES: '/marketplace/textbooks/course-codes/',
+      ISBN_LOOKUP: (isbn: string) => `/marketplace/textbooks/lookup/${isbn}/`
     }
   },
   HEADERS: {

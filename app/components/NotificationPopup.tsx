@@ -1,51 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, X, Package, CreditCard, AlertTriangle, CheckCircle } from 'lucide-react';
+import { notificationsApi } from '@/services/api/notificationsApi';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Notification {
-  id: string;
+  id: number;
   title: string;
   message: string;
   type: 'order' | 'payment' | 'alert' | 'success';
-  time: string;
+  createdAt: string;
   read: boolean;
 }
 
 export default function NotificationPopup() {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      title: 'New Order Received',
-      message: 'Order #1234 has been placed',
-      type: 'order',
-      time: '5 min ago',
-      read: false
-    },
-    {
-      id: '2',
-      title: 'Payment Successful',
-      message: 'Payment for order #1233 was successful',
-      type: 'payment',
-      time: '1 hour ago',
-      read: false
-    },
-    {
-      id: '3',
-      title: 'Low Stock Alert',
-      message: 'Product "iPhone 13" is running low on stock',
-      type: 'alert',
-      time: '2 hours ago',
-      read: true
-    },
-    {
-      id: '4',
-      title: 'System Update',
-      message: 'System maintenance completed successfully',
-      type: 'success',
-      time: '1 day ago',
-      read: true
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const popupRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +30,26 @@ export default function NotificationPopup() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchNotifications();
+    }
+  }, [isOpen]);
+
+  const fetchNotifications = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await notificationsApi.getNotifications();
+      setNotifications(data);
+    } catch (err) {
+      setError('Failed to load notifications');
+      console.error('Error fetching notifications:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -75,12 +66,33 @@ export default function NotificationPopup() {
     }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead();
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const deleteNotification = async (id: number) => {
+    try {
+      await notificationsApi.deleteNotification(id);
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (err) {
+      console.error('Error deleting notification:', err);
+    }
+  };
+
+  const markAsRead = async (id: number) => {
+    try {
+      await notificationsApi.markAsRead(id);
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
   };
 
   return (
@@ -98,7 +110,7 @@ export default function NotificationPopup() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-[100]">
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
@@ -114,7 +126,15 @@ export default function NotificationPopup() {
           </div>
 
           <div className="max-h-96 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {isLoading ? (
+              <div className="p-4 text-center text-gray-500">
+                Loading notifications...
+              </div>
+            ) : error ? (
+              <div className="p-4 text-center text-red-500">
+                {error}
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">
                 No notifications
               </div>
@@ -126,6 +146,7 @@ export default function NotificationPopup() {
                     className={`p-4 hover:bg-gray-50 transition-colors ${
                       !notification.read ? 'bg-indigo-50' : ''
                     }`}
+                    onClick={() => !notification.read && markAsRead(notification.id)}
                   >
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
@@ -136,9 +157,13 @@ export default function NotificationPopup() {
                           <p className="text-sm font-medium text-gray-900">
                             {notification.title}
                           </p>
-                          <button aria-label='Delete'
-                            onClick={() => deleteNotification(notification.id)}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteNotification(notification.id);
+                            }}
                             className="ml-2 text-gray-400 hover:text-gray-600"
+                            aria-label="Delete notification"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -147,7 +172,7 @@ export default function NotificationPopup() {
                           {notification.message}
                         </p>
                         <p className="mt-1 text-xs text-gray-400">
-                          {notification.time}
+                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                         </p>
                       </div>
                     </div>
@@ -162,7 +187,7 @@ export default function NotificationPopup() {
               onClick={() => setIsOpen(false)}
               className="w-full px-4 py-2 text-sm text-center text-indigo-600 hover:text-indigo-800"
             >
-              View all notifications
+              Close
             </button>
           </div>
         </div>

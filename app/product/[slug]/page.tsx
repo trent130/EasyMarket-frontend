@@ -29,7 +29,7 @@ import {
 // import { fetchProductBySlug } from '../../../lib/api-client';
 import type { Product } from '../../types/product';
 import { isValidSlug } from '../../utils/validation';
-import { handleApiError, logError } from '../../utils/errorHandling';
+import { handleApiError, logError } from '@/utils/errorHandling';
 import { productService } from '@/services/api/products';
 
 const ProductStatCard: React.FC<{

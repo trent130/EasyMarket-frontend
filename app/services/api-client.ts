@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { Cache } from '../utils/cache';
 
 // Storage keys for consistency
 export const STORAGE_KEYS = {
@@ -6,6 +7,11 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refreshToken',
   USER: 'user'
 };
+
+// Extend AxiosRequestConfig to include retry property
+interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
+  retried?: boolean;
+}
 
 // Create a separate instance for token refresh to avoid interceptor loops
 const tokenRefreshClient = axios.create({
@@ -15,6 +21,21 @@ const tokenRefreshClient = axios.create({
   },
   withCredentials: true,
 });
+
+// Cache instance for API responses
+const apiCache = new Cache<AxiosResponse>({
+  maxSize: 100,
+  ttl: 5 * 60 * 1000, // 5 minutes
+});
+
+// Request deduplication map
+const pendingRequests = new Map<string, Promise<AxiosResponse>>();
+
+// Generate a cache key from request config
+const getCacheKey = (config: AxiosRequestConfig): string => {
+  const { method = 'get', url = '', params = {}, data = {} } = config;
+  return `${method}:${url}:${JSON.stringify(params)}:${JSON.stringify(data)}`;
+};
 
 const apiClient: AxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
@@ -55,27 +76,57 @@ if (typeof window !== 'undefined') {
   }
 }
 
-// Add request interceptor to ensure token is included in every request
-apiClient.interceptors.request.use(
-  (config) => {
-    // Always get the latest token for each request
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    }
+// Request interceptor for caching and deduplication
+apiClient.interceptors.request.use(async (config) => {
+  const cacheKey = getCacheKey(config);
 
+  // Skip cache for non-GET requests
+  if (config.method?.toLowerCase() !== 'get') {
     return config;
-  },
-  (error) => {
-    return Promise.reject(error);
   }
-);
+
+  // Check cache first
+  const cachedResponse = apiCache.get<AxiosResponse>(cacheKey);
+  if (cachedResponse) {
+    return Promise.reject({
+      config,
+      response: cachedResponse,
+      isCache: true,
+    });
+  }
+
+  // Check for pending requests
+  const pendingRequest = pendingRequests.get(cacheKey);
+  if (pendingRequest) {
+    return Promise.reject({
+      config,
+      response: await pendingRequest,
+      isPending: true,
+    });
+  }
+
+  // Always get the latest token for each request
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
+  return config;
+});
 
 // Add response interceptor for token refresh
 apiClient.interceptors.response.use(
   (response) => {
+    const cacheKey = getCacheKey(response.config);
+
+    // Cache GET responses
+    if (response.config.method?.toLowerCase() === 'get') {
+      apiCache.set(cacheKey, response);
+      pendingRequests.delete(cacheKey);
+    }
+
     return response;
   },
   async (error: AxiosError) => {
@@ -87,7 +138,7 @@ apiClient.interceptors.response.use(
     }
     
     // Mark this request as retried
-      originalRequest._retry = true;
+    originalRequest._retry = true;
     
     // If we're already refreshing, queue this request
     if (isRefreshing) {
@@ -100,36 +151,36 @@ apiClient.interceptors.response.use(
     
     try {
       const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
-        if (!refreshToken) {
+      if (!refreshToken) {
         throw new Error('No refresh token available');
-        }
-        
+      }
+      
       const response = await tokenRefreshClient.post('/marketplace/token/refresh/', {
-          refresh: refreshToken
-        });
+        refresh: refreshToken
+      });
 
-        const { access } = response.data;
+      const { access } = response.data;
       
       // Update tokens in localStorage
       localStorage.setItem(STORAGE_KEYS.TOKEN, access);
 
       // Update auth headers
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       tokenRefreshClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
       
       // Process queued requests
       processQueue(null, access);
 
       // Return the original request with new token
-        return apiClient(originalRequest);
-      } catch (refreshError) {
+      return apiClient(originalRequest);
+    } catch (refreshError) {
       // Handle refresh failure
       processQueue(refreshError, null);
       
       // Clear auth data
       clearAuthData();
       
-        return Promise.reject(refreshError);
+      return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
     }
@@ -163,5 +214,46 @@ export const setAuthToken = (token: string) => {
     tokenRefreshClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   }
 };
+
+// Response interceptor for caching successful responses
+apiClient.interceptors.response.use(
+  (response) => {
+    const cacheKey = getCacheKey(response.config);
+
+    // Cache GET responses
+    if (response.config.method?.toLowerCase() === 'get') {
+      apiCache.set(cacheKey, response);
+      pendingRequests.delete(cacheKey);
+    }
+
+    return response;
+  },
+  async (error: AxiosError) => {
+    // Handle cached responses
+    if (error.response && (error as any).isCache) {
+      return error.response;
+    }
+
+    // Handle pending requests
+    if (error.response && (error as any).isPending) {
+      return error.response;
+    }
+
+    // Implement retry logic for failed requests
+    const config = error.config as ExtendedAxiosRequestConfig;
+    if (config && !config.retried) {
+      config.retried = true;
+      config.timeout = config.timeout ? config.timeout * 2 : 5000;
+
+      try {
+        return await apiClient(config);
+      } catch (retryError) {
+        return Promise.reject(retryError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default apiClient;

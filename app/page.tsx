@@ -21,12 +21,34 @@ import { productService } from "./services/api/products";
 import ProductCard from "./components/Product/ProductCard";
 import type { Product } from "./types/product";
 import Footer from "./components/Footer";
-// import { Height } from '@mui/icons-material';
+import { Suspense } from "react";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { LoadingState } from "./components/LoadingState";
+import { FeaturedProducts } from './components/FeaturedProducts';
+import { TrendingProducts } from './components/TrendingProducts';
 
-export default function HomePage() {
+// Separate components for better code splitting
+const FeaturedProducts = ({ products }: { products: Product[] }) => (
+  <div className="grid md:grid-cols-4 gap-6">
+    {products.map((product) => (
+      <ProductCard key={product.id} product={product} />
+    ))}
+  </div>
+);
+
+const TrendingProducts = ({ products }: { products: Product[] }) => (
+  <div className="grid md:grid-cols-4 gap-6">
+    {products.map((product) => (
+      <ProductCard key={product.id} product={product} />
+    ))}
+  </div>
+);
+
+const ProductsSection = () => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -40,6 +62,7 @@ export default function HomePage() {
         setTrendingProducts(trending);
       } catch (error) {
         console.error("Failed to load products", error);
+        setError("Failed to load products. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -48,6 +71,59 @@ export default function HomePage() {
     loadProducts();
   }, []);
 
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">{error}</p>
+        <Button onClick={() => window.location.reload()} className="mt-4">
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Featured Products */}
+      <section className="container mx-auto px-4 py-16 bg-gray-100">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold flex items-center">
+            <TrendingUp className="mr-3 text-blue-600" /> Featured Products
+          </h2>
+          <Link href="/product">
+            <Button variant="outline">View All</Button>
+          </Link>
+        </div>
+
+        {loading ? (
+          <LoadingState variant="skeleton" skeletonCount={4} />
+        ) : (
+          <FeaturedProducts products={featuredProducts.slice(0, 4)} />
+        )}
+      </section>
+
+      {/* Trending Products */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold flex items-center">
+            <Star className="mr-3 text-yellow-600" /> Trending Now
+          </h2>
+          <Link href="/product">
+            <Button variant="outline">Explore More</Button>
+          </Link>
+        </div>
+
+        {loading ? (
+          <LoadingState variant="skeleton" skeletonCount={4} />
+        ) : (
+          <TrendingProducts products={trendingProducts.slice(0, 4)} />
+        )}
+      </section>
+    </>
+  );
+};
+
+export default function HomePage() {
   return (
     <main className="w-full bg-gray-50">
       {/* Hero Section */}
@@ -187,63 +263,12 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Featured Products */}
-      <section className="container mx-auto px-4 py-16 bg-gray-100">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold flex items-center">
-            <TrendingUp className="mr-3 text-blue-600" /> Featured Products
-          </h2>
-          <Link href="/product">
-            <Button variant="outline">View All</Button>
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="grid md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white h-[400px] animate-pulse rounded-lg"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-4 gap-6">
-            {featuredProducts.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Trending Products */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold flex items-center">
-            <Star className="mr-3 text-yellow-600" /> Trending Now
-          </h2>
-          <Link href="/product">
-            <Button variant="outline">Explore More</Button>
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="grid md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white h-[400px] animate-pulse rounded-lg"
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-4 gap-6">
-            {trendingProducts.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-        )}
-      </section>
+      {/* Products Sections with Error Boundary and Suspense */}
+      <ErrorBoundary fallback={<div>Something went wrong loading products.</div>}>
+        <Suspense fallback={<LoadingState variant="skeleton" skeletonCount={8} />}>
+          <ProductsSection />
+        </Suspense>
+      </ErrorBoundary>
 
       {/* Call to Action */}
       <section className=" text-black py-16">

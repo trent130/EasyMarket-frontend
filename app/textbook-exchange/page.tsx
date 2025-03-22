@@ -4,19 +4,9 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
-import { 
-  Search, 
-  Book, 
-  SwapHoriz, 
-  School,
-  LocalOffer,
-  BookmarkBorder,
-  Share,
-  Message,
-  FilterList,
-  Sort,
-  Add
-} from '@mui/icons-material';
+import { Search, Book, SwapHoriz, School, LocalOffer, BookmarkBorder, Share, Message, FilterList, Sort, Add } from '@mui/icons-material';
+import { textbookExchangeApi } from '@/services/api/textbook-exchange';
+import { Product } from '@/types/product';
 
 interface Textbook {
   id: string;
@@ -52,33 +42,37 @@ export default function TextbookExchange() {
     const fetchTextbooks = async () => {
       setLoading(true);
       try {
-        // Mock data
-        setTimeout(() => {
-          const mockTextbooks: Textbook[] = [
-            {
-              id: 'TB001',
-              title: 'Data Structures and Algorithms',
-              author: 'Thomas H. Cormen',
-              isbn: '978-0262033848',
-              condition: 'Like New',
-              price: 45.99,
-              exchangeOption: 'Both',
-              course: 'CS201',
-              subject: 'Computer Science',
-              edition: '3rd Edition',
-              image: 'https://images.unsplash.com/photo-1532012197267-da84d127e765',
-              owner: {
-                name: 'John Doe',
-                avatar: 'https://randomuser.me/api/portraits/men/1.jpg',
-                rating: 4.5
-              },
-              postedDate: new Date(2024, 1, 15)
-            },
-            // Add more mock textbooks...
-          ];
-          setTextbooks(mockTextbooks);
-          setLoading(false);
-        }, 1000);
+        const params = {
+          title: searchTerm,
+          subject: subjectFilter === 'all' ? undefined : subjectFilter,
+          condition: conditionFilter === 'all' ? undefined : conditionFilter,
+          exchangeOption: exchangeFilter === 'all' ? undefined : exchangeFilter,
+          sortBy,
+        };
+
+        const response = await textbookExchangeApi.searchTextbooks(params);
+        const fetchedTextbooks: Textbook[] = response.results.map((product: Product) => ({
+          id: product.id,
+          title: product.title,
+          author: product.student_name,
+          isbn: product.isbn,
+          condition: product.condition === 'new' ? 'New' : product.condition === 'like_new' ? 'Like New' : 'Good', // Adjust as needed
+          price: product.price,
+          exchangeOption: product.exchangeOption,
+          course: product.course_code || 'N/A',
+          subject: product.subject || 'N/A',
+          edition: product.edition || 'N/A',
+          image: product.images[0] || '', // Assuming the first image is the main image
+          owner: {
+            name: product.owner.name,
+            avatar: product.owner.avatar,
+            rating: product.owner.rating,
+          },
+          postedDate: new Date(product.postedDate),
+        }));
+
+        setTextbooks(fetchedTextbooks);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching textbooks:', error);
         setLoading(false);
@@ -86,7 +80,7 @@ export default function TextbookExchange() {
     };
 
     fetchTextbooks();
-  }, []);
+  }, [searchTerm, subjectFilter, conditionFilter, exchangeFilter, sortBy]);
 
   const getConditionBadgeColor = (condition: string) => {
     const colors = {
@@ -94,14 +88,14 @@ export default function TextbookExchange() {
       'Like New': 'bg-blue-100 text-blue-800',
       'Very Good': 'bg-purple-100 text-purple-800',
       'Good': 'bg-yellow-100 text-yellow-800',
-      'Fair': 'bg-orange-100 text-orange-800'
+      'Fair': 'bg-orange-100 text-orange-800',
     };
     return colors[condition] || 'bg-gray-100 text-gray-800';
   };
 
   return (
     <ProtectedRoute>
-    <DashboardLayout>
+      <DashboardLayout>
         <div className="container mx-auto px-4">
           {/* Header */}
           <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
@@ -110,11 +104,11 @@ export default function TextbookExchange() {
               <p className="text-gray-600">Find, sell, or exchange textbooks with other students</p>
             </div>
             <div className="mt-4 md:mt-0">
-              <button 
+              <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
               >
                 <Add className="mr-2" fontSize="small" />
-            List a Textbook
+                List a Textbook
               </button>
             </div>
           </div>
@@ -236,11 +230,7 @@ export default function TextbookExchange() {
                             {[...Array(5)].map((_, i) => (
                               <span
                                 key={i}
-                                className={`text-xs ${
-                                  i < Math.floor(textbook.owner.rating)
-                                    ? 'text-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
+                                className={`text-xs ${i < Math.floor(textbook.owner.rating) ? 'text-yellow-400' : 'text-gray-300'}`}
                               >
                                 ★
                               </span>
@@ -268,7 +258,7 @@ export default function TextbookExchange() {
             </div>
           )}
         </div>
-    </DashboardLayout>
+      </DashboardLayout>
     </ProtectedRoute>
   );
 }

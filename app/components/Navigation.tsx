@@ -16,6 +16,7 @@ import {
   Home, 
   Inventory 
 } from '@mui/icons-material';
+import NotificationPopup from './NotificationPopup';
 
 const Navigation = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -63,7 +64,7 @@ const Navigation = () => {
   // Don't render auth-dependent parts until mounted
   if (!mounted) {
     return (
-      <nav className="fixed top-0 left-0 w-full text-black bg-white shadow-lg border-gray-200 p-4 z-50 px-4 mb-4">
+      <nav className="fixed top-0 left-0 w-full text-black bg-white shadow-lg border-gray-200 p-4 z-[60] px-4 mb-4">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="text-lg font-bold hover:text-gray-800">
             EasyMarket
@@ -75,7 +76,7 @@ const Navigation = () => {
   }
 
   return (
-    <nav className="fixed top-0 left-0 w-full text-black bg-white shadow-lg border-gray-200 p-4 z-50 px-4 mb-4">
+    <nav className="fixed top-0 left-0 w-full text-black bg-white shadow-lg border-gray-200 p-4 z-[60] px-4 mb-4">
       <div className="container mx-auto flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="text-lg font-bold hover:text-gray-800 flex items-center">
@@ -129,7 +130,8 @@ const Navigation = () => {
           </Link>
           
           <button className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-100`}>
-            <Notifications className="text-gray-700" fontSize="small" />
+            {/* <Notifications className="text-gray-700" fontSize="small" /> */}
+            <NotificationPopup />
             </button>
           
           {isAuthenticated ? (

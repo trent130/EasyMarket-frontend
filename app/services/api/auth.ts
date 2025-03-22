@@ -1,6 +1,7 @@
 import apiClient from '../api-client';
 import { API_CONFIG } from './config';
 import { ApiError } from '@/types/api';
+import { handleApiError } from '@/utils/errorHandling';
 
 export interface TwoFactorAuthResponse {
   secret: string;
@@ -39,7 +40,119 @@ interface AuthResponse {
     username: string;
     first_name?: string;
     last_name?: string;
+    avatar?: string;
+    phone?: string;
+    address?: {
+      street: string;
+      city: string;
+      state: string;
+      postal_code: string;
+      country: string;
+    };
+    preferences?: {
+      notifications: {
+        email: boolean;
+        push: boolean;
+        sms: boolean;
+      };
+      privacy: {
+        show_email: boolean;
+        show_phone: boolean;
+        show_address: boolean;
+      };
+      theme: 'light' | 'dark' | 'system';
+      language: string;
+    };
   };
+}
+
+interface UpdateProfileData extends Partial<RegisterData> {
+  avatar?: File;
+  phone?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  };
+}
+
+interface UpdatePreferencesData {
+  notifications?: {
+    email?: boolean;
+    push?: boolean;
+    sms?: boolean;
+  };
+  privacy?: {
+    show_email?: boolean;
+    show_phone?: boolean;
+    show_address?: boolean;
+  };
+  theme?: 'light' | 'dark' | 'system';
+  language?: string;
+}
+
+interface ChangePasswordData {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+interface UserSettings {
+  email: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  avatar?: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  };
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+  };
+  privacy: {
+    show_email: boolean;
+    show_phone: boolean;
+    show_address: boolean;
+  };
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+}
+
+interface UpdateSettingsData {
+  email?: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  avatar?: File;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+  };
+  notifications?: {
+    email?: boolean;
+    push?: boolean;
+    sms?: boolean;
+  };
+  privacy?: {
+    show_email?: boolean;
+    show_phone?: boolean;
+    show_address?: boolean;
+  };
+  theme?: 'light' | 'dark' | 'system';
+  language?: string;
 }
 
 export const twoFactorApi = {
@@ -86,7 +199,7 @@ export const authApi = {
 
   register: async (data: RegisterData): Promise<AuthResponse> => {
     try {
-      const response = await apiClient.post<AuthResponse>('/marketplace/register/', data);
+      const response = await apiClient.post<AuthResponse>(API_CONFIG.ENDPOINTS.AUTH.REGISTER, data);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
@@ -114,35 +227,140 @@ export const authApi = {
 
   getCurrentUser: async (): Promise<AuthResponse['user']> => {
     try {
-      const response = await apiClient.get<AuthResponse['user']>('/marketplace/me/');
+      const response = await apiClient.get<AuthResponse['user']>(API_CONFIG.ENDPOINTS.AUTH.ME);
       return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
   },
 
-  updateProfile: async (data: Partial<RegisterData>): Promise<AuthResponse['user']> => {
+  updateProfile: async (data: UpdateProfileData): Promise<AuthResponse['user']> => {
     try {
-      const response = await apiClient.patch<AuthResponse['user']>('/marketplace/me/', data);
+      const formData = new FormData();
+      
+      // Handle file upload for avatar
+      if (data.avatar) {
+        formData.append('avatar', data.avatar);
+      }
+
+      // Handle other profile data
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'avatar' && value !== undefined) {
+          if (typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+
+      const response = await apiClient.patch<AuthResponse['user']>(
+        API_CONFIG.ENDPOINTS.AUTH.ME,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
       return response.data;
     } catch (error) {
       throw handleApiError(error);
     }
-  }
-};
+  },
 
-const handleApiError = (error: unknown): never => {
-  const apiError: ApiError = {
-    message: 'An error occurred',
-    status: 500
-  };
+  updatePreferences: async (data: UpdatePreferencesData): Promise<AuthResponse['user']> => {
+    try {
+      const response = await apiClient.patch<AuthResponse['user']>(
+        `${API_CONFIG.ENDPOINTS.AUTH.ME}/preferences/`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
 
-  if (isApiError(error)) {
-    apiError.message = error.response?.data?.message || 'An error occurred';
-    apiError.status = error.response?.status || 500;
-  }
+  changePassword: async (data: ChangePasswordData): Promise<void> => {
+    try {
+      await apiClient.post(`${API_CONFIG.ENDPOINTS.AUTH.ME}/change-password/`, data);
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
 
-  throw apiError;
+  deleteAccount: async (password: string): Promise<void> => {
+    try {
+      await apiClient.delete(API_CONFIG.ENDPOINTS.AUTH.ME, {
+        data: { password }
+      });
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  requestPasswordReset: async (email: string): Promise<void> => {
+    try {
+      await apiClient.post('/marketplace/password-reset/', { email });
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  resetPassword: async (token: string, password: string): Promise<void> => {
+    try {
+      await apiClient.post('/marketplace/password-reset/confirm/', {
+        token,
+        password
+      });
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  getSettings: async (): Promise<UserSettings> => {
+    try {
+      const response = await apiClient.get<UserSettings>(`${API_CONFIG.ENDPOINTS.AUTH.ME}/settings/`);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  updateSettings: async (data: UpdateSettingsData): Promise<UserSettings> => {
+    try {
+      const formData = new FormData();
+
+      // Handle file upload for avatar
+      if (data.avatar) {
+        formData.append('avatar', data.avatar);
+      }
+
+      // Handle other settings data
+      Object.entries(data).forEach(([key, value]) => {
+        if (key !== 'avatar' && value !== undefined) {
+          if (typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value.toString());
+          }
+        }
+      });
+
+      const response = await apiClient.patch<UserSettings>(
+        `${API_CONFIG.ENDPOINTS.AUTH.ME}/settings/`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
 };
 
 const isApiError = (error: unknown): error is { response?: { data?: { message?: string }; status?: number } } => {
